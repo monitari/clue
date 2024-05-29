@@ -8,6 +8,8 @@ import time
 import win32gui
 import threading
 
+pg.init() # pygame 초기화
+
 BLACK = (0, 0, 0, 255) # 검은색
 WHITE = (255, 255, 255, 255) # 흰색
 BLUE = (0, 0, 255, 255) # 파란색
@@ -138,6 +140,36 @@ room_door_pos = ((6, 5), (6, 5), (8, 4), (9, 4), (13, 6), (12, 10), (13, 14),
 grid_bonus_pos = ((8, 5), (10, 6), (9, 13), (12, 12), (11, 15)) # 보너스카드 위치 설정
 grid_bonus = [(wall_pos[0] + x * square_size, wall_pos[1] + y * square_size) for x, y in grid_bonus_pos] #`grid_bonus_pos` 위치에 보너스카드 추가
 
+card_pos = wall_pos[0] + wall_pos[2] + 1 * square_size, wall_pos[1] # 카드 위치 설정
+card_width = square_size * 2 # 카드 너비
+card_height = square_size # 카드 높이
+card_font = pg.font.SysFont('malgungothic', square_size // 3) # 카드 폰트
+border_color = wall_color # 테두리 색상
+border_thickness = thickness # 테두리 두께
+player_size = square_size / 3 # 플레이어 크기
+
+def shuffle_and_distribute_cards(): # 카드 섞고 나눠주기
+    su = list(suspects.keys()) # 용의자 카드
+    wp = list(weapons) # 도구 카드
+    lo = list(locs) # 장소 카드
+    random.shuffle(su) # 용의자 카드 섞기
+    random.shuffle(wp) # 도구 카드 섞기
+    random.shuffle(lo) # 장소 카드 섞기
+    case_envelope = { # 사건봉투
+        'suspect': su.pop(), # 용의자 카드
+        'tool': wp.pop(), # 도구 카드
+        'place': lo.pop() # 장소 카드
+    }
+    all_cards = list(su) + list(wp) + list(lo)  # 모든 카드를 합칩니다.
+    random.shuffle(all_cards)  # 카드를 섞습니다.
+    player_cards = {} # 플레이어 카드를 저장할 딕셔너리 생성
+    for i in range(1, 5): # 4명의 플레이어에게 카드 나눠주기
+        player_cards[list(suspects.keys())[i]] = all_cards[4 * (i - 1):4 * i] #플레이어에게 카드 나눠주기
+        print(list(suspects.keys())[i - 1], "카드:", player_cards[list(suspects.keys())[i]]) 
+    last_cards = all_cards[4 * 4:] # 남은 카드
+    return case_envelope, player_cards, last_cards
+case_envelope, player_cards, all_cards = shuffle_and_distribute_cards() # 카드 섞고 나눠주기
+
 def auto_close_msgbox(delay=2): # 메시지 박스 자동 닫기 함수
     time.sleep(delay)
     try: # try문을 사용하여 예외 처리
@@ -164,45 +196,31 @@ def brighten_color(color, isBrigther): # 색상을 밝게 만드는 함수
         brightened_color = [min(int(channel * 255 + 0.6 * 255), 255) for channel in color] # 각 색상 채널의 값을 증가시켜 색상을 밝게 만듭니다.
         return brightened_color # 밝은 색상을 반환합니다.
     else: return color
-def draw_card(window, font, border_color, thickness, wall_color, card_pos, card_width, card_height, square_size, cards, start_height): # 카드를 그리기 위한 함수
+def draw_card(cards, start_height): # 카드를 그리기 위한 함수
     if cards == bonus_cards_list:  # cards가 bonus_cards_list인 경우
-        card_width *= 1.3  # 카드 너비를 1.3배로 증가
-        card_height *= 1.3  # 카드 높이를 1.3배로 증가
-        font = pg.font.SysFont('malgungothic', square_size // 3 * 13 // 10) # 큰 폰트 설정
+        e_card_width = card_width * 1.3
+        e_card_height = card_height * 1.3
+        e_font = pg.font.SysFont('malgungothic', square_size // 3 * 13 // 10) # 큰 폰트 설정
+    else:
+        e_card_width, e_card_height = card_width, card_height
+        e_font = card_font # 카드 너비, 높이, 폰트 설정
     for i, card in enumerate(cards): # 각 카드에 대해
         row = i // 4
         col = i % 4 # 행 및 열 설정
-        x = card_pos[0] + col * (card_width + square_size // 2) # x 좌표 설정
-        y = card_pos[1] + row * (card_height + square_size // 4) + start_height * (card_height + square_size // 4) # 시작 높이에 따라 y 좌표 설정
-        pg.draw.rect(window, border_color, (x, y, card_width, card_height), thickness)
+        x = card_pos[0] + col * (e_card_width + square_size // 2) # x 좌표 설정
+        y = card_pos[1] + row * (e_card_height + square_size // 4) + start_height * (e_card_height + square_size // 4) # 시작 높이에 따라 y 좌표 설정
+        pg.draw.rect(window, brighten_color(WHITE, False), (x, y, e_card_width, e_card_height))
+        pg.draw.rect(window, wall_color, (x, y, e_card_width, e_card_height), border_thickness) # 카드 테두리 그리기
         if len(card) > 5: card = card[:5] + "..." # 카드 이름이 5글자를 넘어가면 ...으로 표시
-        draw_text(window, card, font, wall_color, (x + card_width / 2, y + card_height / 2)) # 카드 이름 표시시
-def add_rooms_to_grid(rooms, square_size, grid): # 방을 그리드에 추가하는 함수
+        text = e_font.render(card, True, wall_color) # 카드 이름 설정
+        text_rect = text.get_rect(center=(x + e_card_width / 2, y + e_card_height / 2)) # 텍스트 위치 설정
+        window.blit(text, text_rect)
+def add_rooms_to_grid(grid): # 방을 그리드에 추가하는 함수
     for room in rooms: # 각 방에 대해
         room = pg.Rect(*room) # 방의 위치 및 크기를 가져옵니다.
         for x in range(room.left, room.right, square_size): # 방의 좌우 범위에 대해
             for y in range(room.top, room.bottom, square_size): grid.add((x, y)) # 방의 각 좌표를 그리드에 추가
-def shuffle_and_distribute_cards(suspects, weapons, locs, num_cards): # 카드 섞고 나눠주기
-    su = list(suspects.keys()) # 용의자 카드
-    wp = list(weapons) # 도구 카드
-    lo = list(locs) # 장소 카드
-    random.shuffle(su) # 용의자 카드 섞기
-    random.shuffle(wp) # 도구 카드 섞기
-    random.shuffle(lo) # 장소 카드 섞기
-    case_envelope = { # 사건봉투
-        'suspect': su.pop(), # 용의자 카드
-        'tool': wp.pop(), # 도구 카드
-        'place': lo.pop() # 장소 카드
-    }
-    all_cards = list(su) + list(wp) + list(lo)  # 모든 카드를 합칩니다.
-    random.shuffle(all_cards)  # 카드를 섞습니다.
-    player_cards = {} # 플레이어 카드를 저장할 딕셔너리 생성
-    for i in range(1, 5): # 4명의 플레이어에게 카드 나눠주기
-        player_cards[list(suspects.keys())[i]] = all_cards[num_cards * (i - 1):num_cards * i] #플레이어에게 카드 나눠주기
-        print(list(suspects.keys())[i - 1], "카드:", player_cards[list(suspects.keys())[i]]) 
-    last_cards = all_cards[num_cards * 4:] # 남은 카드
-    return case_envelope, player_cards, last_cards
-def add_walls_to_grid(wall_pos, square_size, grid, window, background_color, grid_color, thickness): # 벽을 그리드에 추가하는 함수
+def add_walls_to_grid(grid, grid_color, thickness): # 벽을 그리드에 추가하는 함수
     font = pg.font.Font(None, square_size) # 폰트 객체 생성
     question_mark = font.render("?", True, RED) # "?" 문자를 Surface 객체로 변환
     for x in range(wall_pos.left, wall_pos.right, square_size): # 벽의 각 좌표에 대해
@@ -214,26 +232,28 @@ def add_walls_to_grid(wall_pos, square_size, grid, window, background_color, gri
                     pg.draw.rect(window, brighten_color(RED, True), rect) # 보너스카드 위치에 연한 빨간색으로 채우기
                     window.blit(question_mark, (rect[0] + square_size / 4, rect[1] + square_size / 4)) # 보너스카드 위치에 "?" 표시
                 pg.draw.rect(window, grid_color, rect, thickness // 2) # 그리드에 없는 경우 그리드 색상으로 선 그리기
-def draw_wall(window, wall_color, wall_pos, thickness): # 벽 그리기
+def draw_wall(thickness): # 벽 그리기
     pg.draw.rect(window, wall_color, wall_pos, thickness) 
-def draw_room_walls(window, wall_color, room_walls, thickness): # 방 벽 그리기
+def draw_room_walls(room_walls, thickness): # 방 벽 그리기
     for wall in room_walls: pg.draw.line(window, wall_color, wall[0], wall[1], thickness) # 각 방 벽에 대해 선 그리기
-def draw_room_names(window, font, wall_color, square_size, rooms, room_names): # 방 이름 그리기
+def draw_room_names(font): # 방 이름 그리기
     if len(rooms) >= len(room_names): # 방의 수가 방 이름의 수보다 많거나 같은 경우
         for i, room in enumerate(rooms): # 각 방에 대해
-            draw_text(window, room_names[i], font, GRAY, (room[0] + square_size * (6 if len(room_names[i]) == 3 else 4) / 5, room[1] + square_size * 2 / 5)) # 방 이름 표시
-def create_player(rooms, square_size, player_size, player_name, loc): # 플레이어 생성
+            text = font.render(room_names[i], True, GRAY) # 방 이름 설정
+            text_rect = text.get_rect(center=(room[0] + square_size * (6 if len(room_names[i]) == 3 else 4) / 5, room[1] + square_size * 2 / 5))
+            window.blit(text, text_rect)
+def create_player(player_name, loc): # 플레이어 생성
     x, y = (loc[0] - 6) * square_size + (square_size - player_size) / 2 , (loc[1] - 6) * square_size + (square_size - player_size) / 2 # x 좌표 및 y 좌표 설정
     player = (player_name, pg.Rect(rooms[1][0] + x, rooms[1][1] + y, player_size, player_size))
     return player
-def draw_player(window, player, isBrigther): # 플레이어 그리기
+def draw_player(player, isBrigther): # 플레이어 그리기
     color = brighten_color(suspects[player[0]], isBrigther) # 플레이어 색상 설정
     pg.draw.rect(window, color, player[1]) 
     pg.display.flip()
     return player
-def create_and_draw_players(window, rooms, square_size, player_size, player_pos): # 플레이어 생성 및 그리기
-    players = [create_player(rooms, square_size, player_size, player_name, loc) for player_name, loc in player_pos.items()] # 플레이어 생성
-    for player in players: draw_player(window, player, False) # 플레이어 그리기
+def create_and_draw_players(player_pos): # 플레이어 생성 및 그리기
+    players = [create_player(player_name, loc) for player_name, loc in player_pos.items()] # 플레이어 생성
+    for player in players: draw_player(player, False) # 플레이어 그리기
 def roll_dice(): # 주사위 굴리기
     pg.display.flip() # 창 업데이트
     dice = random.randint(1, 6) # 주사위 굴리기
@@ -250,19 +270,17 @@ def draw_dice(dice1, dice2): # 주사위 그리기
     dice2_text = dice_font.render(str(dice2), True, wall_color) # 주사위 2의 결과
     window.blit(dice1_text, ((dice1_pos[0] + square_size) - square_size / 4, (dice1_pos[1] + square_size / 4))) # 주사위 1의 결과 표시
     window.blit(dice2_text, ((dice2_pos[0] + square_size) - square_size / 4, (dice2_pos[1] + square_size / 4))) # 주사위 2의 결과 표시
-def draw_button(window, color, pos, text, font, thickness): # 버튼 그리기
+def draw_button(pos, text, font, thickness): # 버튼 그리기
     font = pg.font.SysFont('malgungothic', square_size // 2) # 폰트 설정
-    pg.draw.rect(window, color, pos, thickness)
-    draw_text(window, text, font, BLACK, (pos[0] + square_size * 2, pos[1] + square_size * 1))
-def draw_text(window, text, font, color, pos): # 텍스트 그리기
-    text = font.render(text, True, color)
-    text_rect = text.get_rect(center=pos)
+    pg.draw.rect(window, wall_color, pos, thickness) # 버튼 외곽선 그리기
+    text = font.render(text, True, BLACK)
+    text_rect = text.get_rect(center=(pos[0] + square_size * 2, pos[1] + square_size * 1))
     window.blit(text, text_rect)
 def handle_click(x, y, button_pos): # 클릭한 위치 처리
     print("클릭한 위치:", x, y)
     if button_pos[0] <= x <= button_pos[0] + button_pos[2] and button_pos[1] <= y <= button_pos[1] + button_pos[3]: # 버튼을 클릭한 경우
         return True
-def outStartRoom(new_pos, room, isOutStartRoom, cur_player, player_size): # 시작점 방을 나가는 경우
+def outStartRoom(new_pos, room, isOutStartRoom, cur_player): # 시작점 방을 나가는 경우
     room_x_start, room_y_start, width, height = room  # 방의 위치 및 크기 설정
     room_x_end = room_x_start + width # 방의 끝 위치 설정
     room_y_end = room_y_start + height # 방의 끝 위치 설정
@@ -270,7 +288,7 @@ def outStartRoom(new_pos, room, isOutStartRoom, cur_player, player_size): # 시�
     room_y_start, room_y_end = room_y_start / square_size - 2, room_y_end / square_size - 2 # 방의 시작 및 끝 위치 보정
     if room_x_start <= (new_pos[0] + player_size / 20) <= room_x_end and room_y_start < (new_pos[1] + player_size / 20) <= room_y_end and isOutStartRoom[cur_player] is False: return False
     else: return True # 시작점 방을 나간 경우
-def handle_room_entry(new_pos, rooms, cur_player, player_size, isOutStartRoom, other_players_pos, cur_player_room_loc): # 방에 들어가는 경우
+def handle_room_entry(new_pos, cur_player, isOutStartRoom, other_players_pos, cur_player_room_loc): # 방에 들어가는 경우
     for room in rooms: # 각 방에 대해
         x_start, y_start, width, height = room # 방의 위치 및 크기
         x_end = x_start + width # 방의 끝 위치
@@ -297,7 +315,7 @@ def do_dice_roll(previous_dice1, previous_dice2, dice1, dice2, player_pos): # �
         previous_dice1 = None  # 이전 주사위 결과를 초기화합니다.
         previous_dice2 = None  # 이전 주사위 결과를 초기화합니다.
     return player_pos, dice1, dice2, previous_dice1, previous_dice2
-def move_player(cur_player, player_size, player_pos, dice1, dice2, other_players_poss, isOutStartRoom, cur_player_room_loc): # 플레이어 이동
+def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutStartRoom, cur_player_room_loc): # 플레이어 이동
     #os.system('cls') # 화면 지우기
     new_poss = [player_pos]  # 이동한 모든 좌표를 저장하는 리스트
     new_pos = player_pos  # 새로운 위치
@@ -320,7 +338,7 @@ def move_player(cur_player, player_size, player_pos, dice1, dice2, other_players
                     will_start_pos = wall_pos[0] + room_door_pos[12][0] * square_size, wall_pos[1] + room_door_pos[12][1] * square_size
                     print("이동 후 위치:", will_start_pos)
                     player_pos = room_door_pos[12]
-                    draw_player(window, create_player(rooms, square_size, player_size, cur_player, room_door_pos[12]), True) # 플레이어 그리기
+                    draw_player(create_player(cur_player, room_door_pos[12]), True) # 플레이어 그리기
                 elif event.key == pg.K_DOWN: # 아래쪽 방향키를 누른 경우
                     pos = (int(room_door_pos[14][0] * square_size + wall_pos[0] + square_size / 2), int(room_door_pos[14][1] * square_size + wall_pos[1] + square_size / 2))
                     if window.get_at(pos) == BLUE or window.get_at(pos) == RED or window.get_at(pos) == YELLOW or window.get_at(pos) == PURPLE:
@@ -331,7 +349,7 @@ def move_player(cur_player, player_size, player_pos, dice1, dice2, other_players
                     will_start_pos = wall_pos[0] + room_door_pos[14][0] * square_size, wall_pos[1] + room_door_pos[14][1] * square_size
                     print("이동 후 위치:", will_start_pos)
                     player_pos = room_door_pos[14]
-                    draw_player(window, create_player(rooms, square_size, player_size, cur_player, room_door_pos[14]), True)
+                    draw_player(create_player(cur_player, room_door_pos[14]), True)
                 elif event.key == pg.K_LEFT: # 왼쪽 방향키를 누른 경우
                     pos = (int(room_door_pos[11][0] * square_size + wall_pos[0] + square_size / 2), int(room_door_pos[11][1] * square_size + wall_pos[1] + square_size / 2))
                     if window.get_at(pos) == BLUE or window.get_at(pos) == RED or window.get_at(pos) == YELLOW or window.get_at(pos) == PURPLE:
@@ -342,7 +360,7 @@ def move_player(cur_player, player_size, player_pos, dice1, dice2, other_players
                     will_start_pos = wall_pos[0] + room_door_pos[11][0] * square_size, wall_pos[1] + room_door_pos[11][1] * square_size
                     print("이동 후 위치:", will_start_pos)
                     player_pos = room_door_pos[11]
-                    draw_player(window, create_player(rooms, square_size, player_size, cur_player, room_door_pos[11]), True)
+                    draw_player(create_player(cur_player, room_door_pos[11]), True)
                 elif event.key == pg.K_RIGHT: # 오른쪽 방향키를 누른 경우
                     pos = (int(room_door_pos[13][0] * square_size + wall_pos[0] + square_size / 2), int(room_door_pos[13][1] * square_size + wall_pos[1] + square_size / 2))
                     if window.get_at(pos) == BLUE or window.get_at(pos) == RED or window.get_at(pos) == YELLOW or window.get_at(pos) == PURPLE:
@@ -353,7 +371,7 @@ def move_player(cur_player, player_size, player_pos, dice1, dice2, other_players
                     will_start_pos = wall_pos[0] + room_door_pos[13][0] * square_size, wall_pos[1] + room_door_pos[13][1] * square_size
                     print("이동 후 위치:", will_start_pos)
                     player_pos = room_door_pos[13]
-                    draw_player(window, create_player(rooms, square_size, player_size, cur_player, room_door_pos[13]), True)
+                    draw_player(create_player(cur_player, room_door_pos[13]), True)
                 elif event.key == pg.K_ESCAPE: exit() # 게임 종료
                 elif event.key == pg.K_RETURN: # 엔터 키를 누른 경우
                     if will_start_pos == (0, 0): # 이동할 위치가 없는 경우
@@ -416,7 +434,7 @@ def move_player(cur_player, player_size, player_pos, dice1, dice2, other_players
                 show_message("경고", cur_dir + "에 벽이 있어 이동할 수 없습니다. 다시 선택해주세요.")
                 player_pos = new_poss[-1] # 마지막으로 성공한 위치로 돌아갑니다.
             else: # 벽이 없는 경우
-                enter_room = handle_room_entry(new_pos, rooms, cur_player, player_size, isOutStartRoom, other_players_poss, cur_player_room_loc) # 방에 들어가는 경우
+                enter_room = handle_room_entry(new_pos, cur_player, isOutStartRoom, other_players_poss, cur_player_room_loc) # 방에 들어가는 경우
                 if new_pos in other_players_poss.values(): # 다른 플레이어가 있는 경우 
                     print("이동 불가, 다른 플레이어가 있음, 위치 :", new_pos)
                     show_message("경고", "다른 플레이어가 있어 이동할 수 없습니다. 다시 선택해주세요.")
@@ -446,8 +464,7 @@ def move_player(cur_player, player_size, player_pos, dice1, dice2, other_players
                     show_message("오류", "보드를 벗어난 위치입니다.")
                     exit()
                 else: # 이동 가능한 경우
-                    #isOutStartRoom[cur_player] = outStartRoom(new_pos, rooms[12], isOutStartRoom, cur_player, player_size)
-                    draw_player(window, create_player(rooms, square_size, player_size, cur_player, new_pos), True) # 플레이어 그리기
+                    draw_player(create_player(cur_player, new_pos), True) # 플레이어 그리기
                     new_poss.append(new_pos)  # 새로운 위치를 리스트에 추가
                     player_pos = new_pos
                     dice_roll -= 1
@@ -465,23 +482,21 @@ def move_player(cur_player, player_size, player_pos, dice1, dice2, other_players
                     print("추리를 함. 다음 차례.")
                     show_message("알림", "추리를 하여 다음 차례로 넘어갑니다.")
             return player_pos
-def draw_all(font, card_font, border_color, border_thickness, wall_color, player_cards, card_pos, card_width, card_height, square_size, 
-             rooms, grid, room_names, room_walls, all_cards, bonus_cards_list, case_envelope, thickness, player_size, player_pos, dice1, dice2, button_pos): # 모든 요소 그리기
+def draw_all(font, grid, room_walls, thickness, player_pos, dice1, dice2, button_pos): # 모든 요소 그리기
     window.fill(background_color) # 창 배경색으로 채우기
-    add_walls_to_grid(wall_pos, square_size, grid, window, background_color, grid_color, thickness) # 벽을 그리드에 추가
-    draw_wall(window, wall_color, wall_pos, thickness) # 벽 그리기
-    draw_room_walls(window, wall_color, room_walls, thickness) # 방 벽 그리기
-    draw_room_names(window, font, wall_color, square_size, rooms, room_names) # 방 이름 그리기
+    add_walls_to_grid(grid, grid_color, thickness) # 벽을 그리드에 추가
+    draw_wall(thickness) # 벽 그리기
+    draw_room_walls(room_walls, thickness) # 방 벽 그리기
+    draw_room_names(font) # 방 이름 그리기
     for i in range(4): # 각 플레이어에 대해
-        draw_card(window, card_font, border_color, border_thickness, wall_color, card_pos, card_width, card_height, square_size, list(player_cards.values())[i], i) # 플레이어 카드 그리기
-    draw_card(window, card_font, border_color, border_thickness, wall_color, card_pos, card_width, card_height, square_size, all_cards, 4) # 모든 카드 그리기
-    draw_card(window, card_font, border_color, border_thickness, wall_color, card_pos, card_width, card_height, square_size, bonus_cards_list, 4) # 보너스 카드 그리기
-    draw_card(window, card_font, border_color, border_thickness, wall_color, card_pos, card_width, card_height, square_size, list(case_envelope.values()), 10) # 사건봉투 카드 그리기
-    create_and_draw_players(window, rooms, square_size, player_size, player_pos) # 플레이어 생성 및 그리기
+        draw_card(list(player_cards.values())[i], i) # 플레이어 카드 그리기
+    draw_card(bonus_cards_list, 4) # 보너스 카드 그리기
+    draw_card(list(case_envelope.values()), 10) # 사건봉투 카드 그리기
+    create_and_draw_players(player_pos) # 플레이어 생성 및 그리기
     draw_dice(dice1, dice2) # 주사위 그리기
-    draw_button(window, wall_color, button_pos, "주사위 굴리기", font, thickness) # 주사위 굴리기 버튼 그리기
+    draw_button(button_pos, "주사위 굴리기", font, thickness) # 주사위 굴리기 버튼 그리기
     pg.display.flip() # 창 업데이트
-def reasoning(cur_player, cur_player_room_loc):
+def reasoning(cur_player, cur_player_room_loc): # 추리
     root = tk.Tk()
     root.withdraw()  # Hide the root window
 
@@ -494,31 +509,22 @@ def reasoning(cur_player, cur_player_room_loc):
 
         while True:
             suspect = sd.askstring("용의자 선택", "용의자를 선택하세요:", initialvalue=s[0], parent=root)
-            if suspect in s:
-                break
+            if suspect in s: break
             print("잘못된 의심 인물 선택")
         
         while True:
             weapon = sd.askstring("살인 도구 선택", "살인 도구를 선택하세요:", initialvalue=w[0], parent=root)
-            if weapon in w:
-                break
+            if weapon in w: break
             print("잘못된 살인 도구 선택")
 
         print(f"추리: 용의자 - {suspect}, 무기 - {weapon}, 장소 - {cur_player_room_loc[cur_player]}")
-        # Logic for handling the suggestion
-        suggestion = {
-            "suspect": suspect,
-            "weapon": weapon,
-            "room": cur_player_room_loc[cur_player]
-        }
-        message = handle_suggestion(cur_player, suggestion)
-        show_message("추리 결과", message)
+        show_message("추리", f"용의자 - {suspect}, 무기 - {weapon}, 장소 - {cur_player_room_loc[cur_player]}")
+        for player in player_cards.keys():
+            if suspect in player_cards[player] or weapon in player_cards[player] or cur_player_room_loc[cur_player] in player_cards[player]:
+                raise Exception(f"{player}의 카드 중 하나가 추리한 카드와 일치합니다.")
     else:
         print("추리 취소")
         return None
-def handle_suggestion(player_name, suggestion):
-    print(f"{player_name}의 추리: {suggestion}")
-    return f"{player_name}의 추리 결과: 아무도 카드를 가지고 있지 않습니다."
 def main(): # 메인 함수
     pg.init() # pg 초기화
     dice1 = 0  # 주사위 초기값 설정
@@ -526,23 +532,14 @@ def main(): # 메인 함수
     cnt = 0  # 카운트 초기값 설정
     grid = set() # 그리드 설정
     font = pg.font.SysFont('malgungothic', square_size * 2 // 3) # 폰트 설정
-    add_rooms_to_grid(rooms, square_size, grid) # 방을 그리드에 추가
-    num_cards = 4  # 각 플레이어에게 나눠줄 카드의 수 : 4명이므로 4장
-    case_envelope, player_cards, all_cards = shuffle_and_distribute_cards(suspects, weapons, locs, num_cards) # 카드 섞고 나눠주기
-    player_size = square_size / 3 # 플레이어 크기
+    add_rooms_to_grid(grid) # 방을 그리드에 추가
+    button_pos = wall_pos[0] + 21 * square_size, wall_pos[1] + 18 * square_size, 4 * square_size, 2 * square_size # 버튼 위치 설정
     player_pos = { # 각 플레이어의 초기 위치를 설정합니다.
         list(suspects.keys())[0] : (8, 10),
         list(suspects.keys())[1] : (11, 10),
         list(suspects.keys())[2] : (8, 12),
         list(suspects.keys())[3] : (11, 12),
     }
-    card_pos = wall_pos[0] + wall_pos[2] + 1 * square_size, wall_pos[1] # 카드 위치 설정
-    card_width = square_size * 2 # 카드 너비
-    card_height = square_size # 카드 높이
-    card_font = pg.font.SysFont('malgungothic', square_size // 3) # 카드 폰트
-    border_color = wall_color # 테두리 색상
-    border_thickness = thickness # 테두리 두께
-    button_pos = wall_pos[0] + 21 * square_size, wall_pos[1] + 18 * square_size, 4 * square_size, 2 * square_size # 버튼 위치 설정
     isOutStartRoom = { # 시작점 방을 나갔는지 여부
         list(suspects.keys())[0]: False,
         list(suspects.keys())[1]: False,
@@ -556,8 +553,7 @@ def main(): # 메인 함수
         list(suspects.keys())[3]: room_names[rooms.index(rooms[12])],
     }
     
-    draw_all(font, card_font, border_color, border_thickness, wall_color, player_cards, card_pos, card_width, card_height, square_size, # 모든 요소 그리기
-             rooms, grid, room_names, room_walls, all_cards, bonus_cards_list, case_envelope, thickness, player_size, player_pos, dice1, dice2, button_pos)
+    draw_all(font, grid, room_walls, thickness, player_pos, dice1, dice2, button_pos) # 모든 요소 그리기
     pg.display.flip() # 창 업데이트
 
     running = True # 게임 실행 여부
@@ -568,10 +564,9 @@ def main(): # 메인 함수
         cur_player = list(player_pos.keys())[cnt % 4] # 현재 플레이어
         if notMoved: # 이동하지 않은 경우
             player_pos, dice1, dice2, previous_dice1, previous_dice2 = do_dice_roll(previous_dice1, previous_dice2, dice1, dice2, player_pos)
-            draw_all(font, card_font, border_color, border_thickness, wall_color, player_cards, card_pos, card_width, card_height, square_size, # 모든 요소 그리기
-                     rooms, grid, room_names, room_walls, all_cards, bonus_cards_list, case_envelope, thickness, player_size, player_pos, dice1, dice2, button_pos)
+            draw_all(font, grid, room_walls, thickness, player_pos, dice1, dice2, button_pos) # 모든 요소 그리기
             other_players_poss = {player[0]: (player[1][0], player[1][1]) for player in player_pos.items() if player[0] != cur_player} # 나머지 플레이어들의 좌표를 가져옵니다
-            new_pos = move_player(cur_player, player_size, player_pos[cur_player], dice1, dice2, other_players_poss, isOutStartRoom, cur_player_room_loc)
+            new_pos = move_player(cur_player, player_pos[cur_player], dice1, dice2, other_players_poss, isOutStartRoom, cur_player_room_loc)
             if new_pos != player_pos[cur_player]:  # 플레이어가 이동한 경우
                 previous_dice1 = None  # 이전 주사위 결과를 초기화합니다.
                 previous_dice2 = None  # 이전 주사위 결과를 초기화합니다.
@@ -581,8 +576,7 @@ def main(): # 메인 함수
                 previous_dice2 = dice2  # 이전 주사위 결과를 저장합니다.
                 notMoved = True
             player_pos[cur_player] = new_pos
-            draw_all(font, card_font, border_color, border_thickness, wall_color, player_cards, card_pos, card_width, card_height, square_size, # 모든 요소 그리기
-                rooms, grid, room_names, room_walls, all_cards, bonus_cards_list, case_envelope, thickness, player_size, player_pos, dice1, dice2, button_pos)
+            draw_all(font, grid, room_walls, thickness, player_pos, dice1, dice2, button_pos) # 모든 요소 그리기
         else: # 이동한 경우
             for event in pg.event.get(): # 각 이벤트에 대해
                 if event.type == pg.QUIT: running = False # 종료 버튼을 누른 경우
@@ -590,10 +584,9 @@ def main(): # 메인 함수
                     if event.type == pg.MOUSEBUTTONDOWN: x, y = event.pos  # 클릭한 위치를 가져옵니다.
                     if (event.type == pg.KEYDOWN and event.key == pg.K_SPACE) or handle_click(x, y, button_pos) : # 주사위 굴리기 버튼을 클릭했거나 스페이스바를 누른 경우
                         player_pos, dice1, dice2, previous_dice1, previous_dice2 = do_dice_roll(previous_dice1, previous_dice2, dice1, dice2, player_pos)
-                        draw_all(font, card_font, border_color, border_thickness, wall_color, player_cards, card_pos, card_width, card_height, square_size, 
-                                 rooms, grid, room_names, room_walls, all_cards, bonus_cards_list, case_envelope, thickness, player_size, player_pos, dice1, dice2, button_pos) # 모든 요소 그리기
+                        draw_all(font, grid, room_walls, thickness, player_pos, dice1, dice2, button_pos) # 모든 요소 그리기
                         other_players_poss = {player[0]: (player[1][0], player[1][1]) for player in player_pos.items() if player[0] != cur_player} # 나머지 플레이어들의 좌표를 가져옵니다.    
-                        new_pos = move_player(cur_player, player_size, player_pos[cur_player], dice1, dice2, other_players_poss, isOutStartRoom, cur_player_room_loc)
+                        new_pos = move_player(cur_player, player_pos[cur_player], dice1, dice2, other_players_poss, isOutStartRoom, cur_player_room_loc)
                         if new_pos == player_pos[cur_player]:  # 이동하지 않은 경우
                             previous_dice1 = dice1 # 이전 주사위 결과를 저장합니다.
                             previous_dice2 = dice2 # 이전 주사위 결과를 저장합니다.
@@ -604,8 +597,7 @@ def main(): # 메인 함수
                             cnt += 1 # 카운트 증가 
                             notMoved = False      
                         player_pos[cur_player] = new_pos 
-                        draw_all(font, card_font, border_color, border_thickness, wall_color, player_cards, card_pos, card_width, card_height, square_size, 
-                            rooms, grid, room_names, room_walls, all_cards, bonus_cards_list, case_envelope, thickness, player_size, player_pos, dice1, dice2, button_pos) # 모든 요소 그리기
+                        draw_all(font, grid, room_walls, thickness, player_pos, dice1, dice2, button_pos) # 모든 요소 그리기
     pg.quit() # pg 종료 
 
 if __name__ == "__main__":
