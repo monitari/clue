@@ -32,13 +32,18 @@ thickness = square_size // 10 # 선 두께 설정
 window = pg.display.set_mode(window_size) # 창 크기 설정
 pg.display.set_caption("CLUE - board game") # 창 제목 설정
 window.fill(bg_color) # 창 배경색으로 채우기
-cluedo_logo = pg.image.load("images/cluedo_logo.png") # 클루도 로고 이미지 불러오기
+cluedo_logo = pg.image.load("images/cluedo_logo.png") # 클루 로고 이미지 불러오기
 cluedo_logo = pg.transform.scale(cluedo_logo, (square_size * 12, square_size * 4)) # 클루도 로고 이미지 크기 조정
 roll_dice_sound = pg.mixer.Sound("sounds/dice.mp3") # 주사위 굴리는 소리 불러오기
 move_sound = pg.mixer.Sound("sounds/move.mp3") # 이동하는 소리 불러오기
 enter_room_sound = pg.mixer.Sound("sounds/enter_room.mp3") # 방에 들어가는 소리 불러오기
 exit_room_sound = pg.mixer.Sound("sounds/exit_room.mp3") # 방을 나가는 소리 불러오기
+walking_sound = pg.mixer.Sound("sounds/walking.mp3") # 걷는 소리 불러오기
 reasoning_sound = pg.mixer.Sound("sounds/reasoning.mp3") # 추리하는 소리 불러오기
+final_reasoning_sound = pg.mixer.Sound("sounds/final_reasoning.mp3") # 최종 추리하는 소리 불러오기
+win_sound = pg.mixer.Sound("sounds/win.mp3") # 승리하는 소리 불러오기
+lose_sound = pg.mixer.Sound("sounds/lose.mp3") # 패배하는 소리 불러오기
+laugh_sound = pg.mixer.Sound("sounds/laugh.mp3") # 웃는 소리 불러오기
 
 suspects = { # 용의자카드
         "피콕": BLUE,
@@ -55,7 +60,7 @@ room_names.insert(1, "") # 이름 빈 방
 room_names.insert(8, "") # 이름 빈 방
 room_names.insert(9, "") # 이름 빈 방
 room_names.insert(12, "시작점") # 시작점 방
-bonus_cards = { # 보너스카드
+bonus_cards = { # 보너스카드 (더미 데이터)
         "차례를 한 번 더 진행합니다." : "지금 사용하거나 필요할 때 사용합니다.",
         "원하는 장소로 이동합니다." : "지금 사용합니다.",
         "카드 엿보기" : "누군가 다른 사람에게 추리 카드를 보여줄 때 그 카드를 볼 수 있습니다. 필요할 때 사용합니다.",
@@ -159,7 +164,7 @@ start_room_door_pos = ((7, 11), (10, 9), (12, 11), (10, 13)) # 시작방의 문 
 grid_bonus_pos = ((8, 5), (10, 6), (9, 13), (12, 12), (11, 15)) # 보너스카드 위치 설정
 grid_bonus = [(wall_pos[0] + x * square_size, wall_pos[1] + y * square_size) for x, y in grid_bonus_pos] #`grid_bonus_pos` 위치에 보너스카드 추가
 card_pos = wall_pos[0] + wall_pos[2] + 1 * square_size, wall_pos[1] # 카드 위치 설정
-card_width = square_size * 2 # 카드 너비ㅉ
+card_width = square_size * 2 # 카드 너비
 card_height = square_size # 카드 높이
 card_font = pg.font.SysFont('malgungothic', square_size) # 카드 폰트
 border_color = wall_color # 테두리 색상
@@ -204,7 +209,7 @@ case_envelope, player_cards, all_cards = shuffle_and_distribute_cards() # 카드
 def auto_close_msgbox(delay=2): # 메시지 박스 자동 닫기 함수
     time.sleep(delay)
     try: # try문을 사용하여 예외 처리
-        win = win32gui.FindWindow(None, "알림") # "알림"이라는 창을 찾습니다.
+        win = win32gui.FindWindow(None, "알림") # 창을 찾습니다.
         ctypes.windll.user32.PostMessageA(win, 0x0010, 0, 0) # 창을 닫습니다.
     except Exception as e: print(e) # 예외 처리 
 def show_message(title, message): # 메시지 표시 함수
@@ -212,11 +217,9 @@ def show_message(title, message): # 메시지 표시 함수
     if title == "경고": # 경고
         msg.showwarning(title, message)
         return True
-    elif title == "오류" or title == "실패": # 오류, 실패
+    elif title == "실패": # 실패
         msg.showerror(title, message)
         return True
-    elif title == "정보": # 정보
-        return msg.askquestion(title, message)
     elif title == "예/아니오": # 예/아니오
         return msg.askyesno(title, message)
     else: # 알림, 취소
@@ -227,8 +230,12 @@ def brighten_color(color, isBrigther): # 색상을 밝게 만드는 함수
         brightened_color = [min(int(channel * 255 + 0.6 * 255), 255) for channel in color] # 각 색상 채널의 값을 증가시켜 색상을 밝게 만듭니다.
         return brightened_color # 밝은 색상을 반환합니다.
     else: return color
-def draw_card(cards, start_height, cur_player, lastShowing = False): # 카드를 그리기 위한 함수
+def draw_card(cards, start_height, cur_player, lastShowing = False, Lose = False): # 카드 그리기
     small_font = pg.font.SysFont('malgungothic', 15)  # 작은 폰트 설정
+    text1 = small_font.render("현재 플레이어", True, wall_color) # 현재 플레이어
+    text1_rect = text1.get_rect(center=(card_pos[0] + card_width * 8, card_pos[1] +  3 * square_size)) # 현재 플레이어 위치 설정
+    text2 = card_font.render(cur_player, True, wall_color) # 플레이어 이름
+    text2_rect = text2.get_rect(center=(card_pos[0] + card_width * 8, text1_rect.bottom + text2.get_height() / 2)) # 플레이어 이름 위치 설정
     # 플레이어 순서 출력
     p1 = small_font.render(list(player_cards.keys())[0], True, RED if cur_player == list(player_cards.keys())[0] else wall_color) # 플레이어 피콕
     p2 = small_font.render(list(player_cards.keys())[1], True, RED if cur_player == list(player_cards.keys())[1] else wall_color) # 플레이어 플럼
@@ -238,20 +245,14 @@ def draw_card(cards, start_height, cur_player, lastShowing = False): # 카드를
     p2_rect = p2.get_rect(center=(card_pos[0] + card_width * 8, card_pos[1] + 0 * square_size)) # 플레이어 플럼 위치 설정
     p3_rect = p3.get_rect(center=(card_pos[0] + card_width * 8, card_pos[1] + 1 * square_size)) # 플레이어 스칼렛 위치 설정
     p4_rect = p4.get_rect(center=(card_pos[0] + card_width * 8, card_pos[1] + 2 * square_size)) # 플레이어 머스타드 위치 설정
-    window.blit(p1, p1_rect) # 플레이어 피콕 출력
-    window.blit(p2, p2_rect) # 플레이어 플럼 출력
-    window.blit(p3, p3_rect) # 플레이어 스칼렛 출력
-    window.blit(p4, p4_rect) # 플레이어 머스타드 출력
-
-    # "현재 플레이어" 텍스트 설정
-    text1 = small_font.render("현재 플레이어", True, wall_color)
-    text1_rect = text1.get_rect(center=(card_pos[0] + card_width * 8, card_pos[1] +  3 * square_size))
-    window.blit(text1, text1_rect)
     
-    # 플레이어 이름 텍스트 설정
-    text2 = card_font.render(cur_player, True, wall_color)
-    text2_rect = text2.get_rect(center=(card_pos[0] + card_width * 8, text1_rect.bottom + text2.get_height() / 2))
-    window.blit(text2, text2_rect)
+    if lastShowing is False: # 아직 때가 아님
+        window.blit(p1, p1_rect) # 플레이어 피콕 출력
+        window.blit(p2, p2_rect) # 플레이어 플럼 출력
+        window.blit(p3, p3_rect) # 플레이어 스칼렛 출력
+        window.blit(p4, p4_rect) # 플레이어 머스타드 출력
+        window.blit(text1, text1_rect) # 플레이어 순서 출력
+        window.blit(text2, text2_rect) # 플레이어 이름 출력
 
     for i, card in enumerate(cards): # 각 카드에 대해
         row = i // 4
@@ -263,19 +264,21 @@ def draw_card(cards, start_height, cur_player, lastShowing = False): # 카드를
             y = card_pos[1] + row * (e_card_height + square_size // 4) + start_height * (e_card_height + square_size // 4) # 시작 높이에 따라 y 좌표 설정
             if len(card) > 5: card = card[:5] + "..." # 카드 이름이 5글자를 넘어가면 ...으로 표시
             if card in case_envelope.values(): card = "???"
-        else: # 패배하고 사건 봉투를 열었을 때, 화면 가운데에 사건 봉투 세장 공개
+        else: # 승리/패배하고 사건 봉투를 열었을 때, 화면 가운데에 사건 봉투 세장 공개
             e_card_width, e_card_height = card_width * 4, card_height * 10
             e_card_font = pg.font.SysFont('malgungothic', square_size * 2) # 폰트 설정
             x = square_size * 15 / 2 + col * (e_card_width + square_size // 2) # x 좌표 설정
             y = square_size * 6 + row * (e_card_height + square_size // 4) + start_height * (e_card_height + square_size // 4) # 시작 높이에 따라 y 좌표 설정
-            text_title = e_card_font.render("사건 봉투", True, wall_color) # 사건 봉투 제목 설정
-            text_title_rect = text_title.get_rect(center=(x - e_card_width / 2, y + e_card_height * 5 / 4)) # 사건 봉투 제목 위치 설정
-            window.blit(text_title, text_title_rect)
         pg.draw.rect(window, brighten_color(WHITE, False), (x, y, e_card_width, e_card_height))
         pg.draw.rect(window, wall_color, (x, y, e_card_width, e_card_height), border_thickness) # 카드 테두리 그리기
         text = e_card_font.render(card, True, wall_color) # 카드 이름 설정
         text_rect = text.get_rect(center=(x + e_card_width / 2, y + e_card_height / 2)) # 텍스트 위치 설정
         window.blit(text, text_rect)
+    if lastShowing is True:
+        message = "승리하셨습니다!" if Lose is False else "패배하셨습니다!" # 승리/패배 메시지
+        text_title = e_card_font.render(message, True, wall_color)
+        text_title_rect = text_title.get_rect(center=(x - e_card_width / 2, y + e_card_height * 5 / 4))
+        window.blit(text_title, text_title_rect)
 def add_rooms_to_grid(grid): # 방을 그리드에 추가하는 함수
     for room in rooms: # 각 방에 대해
         room = pg.Rect(*room) # 방의 위치 및 크기를 가져옵니다.
@@ -359,17 +362,18 @@ def handle_room_entry(new_pos, cur_player, isOutStartRoom, other_players_pos, cu
         y_start, y_end = y_start / square_size - 2, y_end / square_size - 2 # 방의 시작 및 끝 위치 보정
         if isOutStartRoom[cur_player] is True : # 시작점 방을 나간 경우
             if x_start <= (new_pos[0] + player_size / 20) <= x_end and y_start < (new_pos[1] + player_size / 20) <= y_end: # 방에 들어온 경우
-                print(cur_player, "이/가", room_names[rooms.index(room)], "방에 들어옴")
+                print(cur_player, "이/가", room_names[rooms.index(room)], "방에 들어옴", "이유", new_pos[0] + player_size / 20, new_pos[1] + player_size / 20)
                 enter_room_sound.play() # 방에 들어가는 소리 재생
                 print(cur_room_loc[cur_player], "에서", room_names[rooms.index(room)], "로 이동", x_start, y_start, x_end, y_end)
                 cur_room_loc[cur_player] = room_names[rooms.index(room)] # 현재 방 위치 설정
-                print(room_names[rooms.index(room)], "방 위치로 변경:", cur_room_loc[cur_player])
                 while True: # 다른 플레이어가 있거나 방의 통로 위치인 경우
                     new_pos = (random.randint(int(x_start), int(x_end) - 1), random.randint(int(y_start), int(y_end) - 1))
                     if new_pos not in other_players_pos.values() and new_pos not in room_shortcut_pos: break
                 if hasReasoned[cur_player] is True and cur_room_loc[cur_player] == "시작점": # 추리를 했고 시작점 방에 있는 경우
                     show_message("알림", "최종 추리를 실행합니다.")
                     if final_reasoning(cur_player) == False: 
+                        isLosed[cur_player] = True
+                        cur_room_loc[cur_player] = "바깥"
                         return -1, -1
     return new_pos
 def do_dice_roll(previous_dice1, previous_dice2, dice1, dice2, player_pos): # 주사위 굴리기
@@ -382,13 +386,12 @@ def do_dice_roll(previous_dice1, previous_dice2, dice1, dice2, player_pos): # �
         previous_dice1 = None  # 이전 주사위 결과를 초기화합니다.
         previous_dice2 = None  # 이전 주사위 결과를 초기화합니다.
     return player_pos, dice1, dice2, previous_dice1, previous_dice2
-
 def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutStartRoom, cur_room_loc): # 플레이어 이동
     def exit_room(cur_player, new_pos, dice_roll): # 방을 나가는 경우
         print("방을 나감")
         cur_room_loc[cur_player] = "복도"
         player_pos = new_pos
-        dice_roll -= -1
+        dice_roll -= 1
         draw_player(create_player(cur_player, new_pos), True, True)
         exit_room_sound.play() # 방을 나가는 소리 재생
         return player_pos, dice_roll # 플레이어 위치 및 주사위 결과 반환
@@ -426,11 +429,11 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
                     cur_room_loc[cur_player] = room_transitions[cur_room]["next_room"]
                     new_pos = room_transitions[cur_room]["new_pos"]
                     while new_pos in other_players_poss.values():
-                        print("다른 플레이어가 이미 있음. 이동할 수 없는 위치", new_pos, other_players_poss)
                         new_pos = room_transitions[cur_room]["new_pos"]
                         if new_pos not in other_players_poss.values(): break
                     player_pos = new_pos
                     dice_roll = 0
+                    walking_sound.play() # 걷는 소리 재생
                 else:  # 다른 방으로 이동하지 않는 경우
                     print("다른 방으로 이동하지 않음")
                     if show_message("예/아니오", "이 방에서 나가시겠습니까?"):
@@ -439,12 +442,12 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
                             if cur_room_loc[cur_player] == "마당": # 마당인 경우 (마당은 입구가 2칸 넓이)
                                 if (10, 16) in other_players_poss.values() or (9, 16) in other_players_poss.values():
                                     print("다른 플레이어가 막고 있음. 이동할 수 없는 위치", new_pos, other_players_poss)
-                                    show_message("경고", "다른 플레이어가 가로막고 있습니다. 이동할 수 없는 위치입니다.")
+                                    show_message("실패", "다른 플레이어가 가로막고 있습니다. 이동할 수 없는 위치입니다.")
                                     dice_roll = 0
                                 else: player_pos, dice_roll = exit_room(cur_player, new_pos, dice_roll) # 방을 나가는 경우
                             else:
                                 print("다른 플레이어가 막고 있음. 이동할 수 없는 위치", new_pos, other_players_poss)
-                                show_message("경고", "다른 플레이어가 가로막고 있습니다. 이동할 수 없는 위치입니다.")
+                                show_message("실패", "다른 플레이어가 가로막고 있습니다. 이동할 수 없는 위치입니다.")
                                 dice_roll = 0 
                         else: player_pos, dice_roll = exit_room(cur_player, new_pos, dice_roll) # 방을 나가는 경우
                     else :
@@ -459,7 +462,7 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
                     new_pos = room_door_pos[cur_room_loc[cur_player]] # 방의 문 위치로 이동
                     if new_pos in other_players_poss.values():
                         print("다른 플레이어가 막고 있음. 이동할 수 없는 위치", new_pos, other_players_poss)
-                        show_message("경고", "다른 플레이어가 가로막고 있습니다. 이동할 수 없는 위치입니다.")
+                        show_message("실패", "다른 플레이어가 가로막고 있습니다. 이동할 수 없는 위치입니다.")
                         dice_roll = 0
                     else: player_pos, dice_roll = exit_room(cur_player, new_pos, dice_roll) # 방을 나가는 경우
                 else: # 취소, 방을 나가지 않는 경우
@@ -478,7 +481,7 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
                     pos = (int(start_room_door_pos[1][0] * square_size + wall_pos[0] + square_size / 2), int(start_room_door_pos[1][1] * square_size + wall_pos[1] + square_size / 2))
                     if window.get_at(pos) == BLUE or window.get_at(pos) == RED or window.get_at(pos) == YELLOW or window.get_at(pos) == PURPLE:
                         print("다른 플레이어가 이미 있음. 이동할 수 없는 위치")
-                        show_message("경고", "다른 플레이어가 있습니다. 이동할 수 없는 위치입니다.")
+                        show_message("실패", "다른 플레이어가 있습니다. 이동할 수 없는 위치입니다.")
                         continue
                     pg.draw.rect(window, bg_color, ((2 * will_start_pos[0] + square_size - player_size - 5) / 2, (2 * will_start_pos[1] + square_size - player_size - 5) / 2, player_size + 5, player_size + 5)) # 플레이어 이동 전 위치 배경색으로 채우기
                     will_start_pos = wall_pos[0] + start_room_door_pos[1][0] * square_size, wall_pos[1] + start_room_door_pos[1][1] * square_size
@@ -488,7 +491,7 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
                     pos = (int(start_room_door_pos[3][0] * square_size + wall_pos[0] + square_size / 2), int(start_room_door_pos[3][1] * square_size + wall_pos[1] + square_size / 2))
                     if window.get_at(pos) == BLUE or window.get_at(pos) == RED or window.get_at(pos) == YELLOW or window.get_at(pos) == PURPLE:
                         print("다른 플레이어가 이미 있음. 이동할 수 없는 위치")
-                        show_message("경고", "다른 플레이어가 있습니다. 이동할 수 없는 위치입니다.")
+                        show_message("실패", "다른 플레이어가 있습니다. 이동할 수 없는 위치입니다.")
                         continue
                     pg.draw.rect(window, bg_color, ((2 * will_start_pos[0] + square_size - player_size - 5) / 2, (2 * will_start_pos[1] + square_size - player_size - 5) / 2, player_size + 5, player_size + 5))
                     will_start_pos = wall_pos[0] + start_room_door_pos[3][0] * square_size, wall_pos[1] + start_room_door_pos[3][1] * square_size
@@ -498,7 +501,7 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
                     pos = (int(start_room_door_pos[0][0] * square_size + wall_pos[0] + square_size / 2), int(start_room_door_pos[0][1] * square_size + wall_pos[1] + square_size / 2))
                     if window.get_at(pos) == BLUE or window.get_at(pos) == RED or window.get_at(pos) == YELLOW or window.get_at(pos) == PURPLE:
                         print("다른 플레이어가 이미 있음. 이동할 수 없는 위치")
-                        show_message("경고", "다른 플레이어가 있습니다. 이동할 수 없는 위치입니다.")
+                        show_message("실패", "다른 플레이어가 있습니다. 이동할 수 없는 위치입니다.")
                         continue
                     pg.draw.rect(window, bg_color, ((2 * will_start_pos[0] + square_size - player_size - 5) / 2, (2 * will_start_pos[1] + square_size - player_size - 5) / 2, player_size + 5, player_size + 5))
                     will_start_pos = wall_pos[0] + start_room_door_pos[0][0] * square_size, wall_pos[1] + start_room_door_pos[0][1] * square_size
@@ -508,7 +511,7 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
                     pos = (int(start_room_door_pos[2][0] * square_size + wall_pos[0] + square_size / 2), int(start_room_door_pos[2][1] * square_size + wall_pos[1] + square_size / 2))
                     if window.get_at(pos) == BLUE or window.get_at(pos) == RED or window.get_at(pos) == YELLOW or window.get_at(pos) == PURPLE:
                         print("다른 플레이어가 이미 있음. 이동할 수 없는 위치")
-                        show_message("경고", "다른 플레이어가 있습니다. 이동할 수 없는 위치입니다.")
+                        show_message("실패", "다른 플레이어가 있습니다. 이동할 수 없는 위치입니다.")
                         continue
                     pg.draw.rect(window, bg_color, ((2 * will_start_pos[0] + square_size - player_size - 5) / 2, (2 * will_start_pos[1] + square_size - player_size - 5) / 2, player_size + 5, player_size + 5))
                     will_start_pos = wall_pos[0] + start_room_door_pos[2][0] * square_size, wall_pos[1] + start_room_door_pos[2][1] * square_size
@@ -550,7 +553,6 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
                     print(cur_player, "이/가 이동을 끝냄")
                     return player_pos, None
                 else: # No를 누른 경우
-                    show_message("취소", "계속 진행합니다.")
                     print("취소, 계속 진행함")
                     continue
             else: continue # 다른 키를 누른 경우
@@ -558,18 +560,19 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
             mid = (int(mid_pos[0]*square_size + wall_pos[0] + square_size / 2), int(mid_pos[1]*square_size + wall_pos[1] + square_size / 2)) # 중간 위치(벽 판별 위해)
             if window.get_at(mid) == BLACK: # 벽이 있는 경우
                 print("이동 불가,", cur_dir, "에 벽이 있음, 위치 :", new_pos)
-                show_message("경고", cur_dir + "에 벽이 있어 이동할 수 없습니다. 다시 선택해주세요.")
+                show_message("실패", cur_dir + "에 벽이 있어 이동할 수 없습니다. 다시 선택해주세요.")
                 player_pos = new_poss[-1] # 마지막으로 성공한 위치로 돌아갑니다.
             else: # 벽이 없는 경우
                 enter_room = handle_room_entry(new_pos, cur_player, isOutStartRoom, other_players_poss, cur_room_loc) # 방에 들어가는 경우
                 if new_pos in other_players_poss.values(): # 다른 플레이어가 있는 경우 
                     print("이동 불가, 다른 플레이어가 있음, 위치 :", new_pos)
-                    show_message("경고", "다른 플레이어가 있어 이동할 수 없습니다. 다시 선택해주세요.")
+                    show_message("실패", "다른 플레이어가 있어 이동할 수 없습니다. 다시 선택해주세요.")
                     player_pos = new_poss[-1]  # 마지막으로 성공한 위치로 돌아갑니다.
                     continue
                 elif isOutStartRoom[cur_player] is True and cur_room_loc[cur_player] == "시작점" and enter_room != new_pos and hasReasoned[cur_player] is False: # 시작점 방을 나가고 추리 없이 다시 들어가는 경우
                     print("이동 불가, 추리를 먼저 해야함")
                     show_message("경고", "시작점 방을 나가고 다시 들어가려면 추리를 먼저 해야합니다.")
+                    cur_room_loc[cur_player] = "복도"
                     player_pos = new_poss[-1] # 마지막으로 성공한 위치로 돌아갑니다.
                     continue
                 elif enter_room != new_pos: # 방에 들어가는 경우
@@ -595,7 +598,7 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
         print(cur_player, ":", player_pos, "으로 이동") 
         print(cur_player, "위치 이동", old_pos, " -> ", player_pos)
         print("이동 후 방 위치 : ", cur_room_loc)
-        if cur_room_loc[cur_player] != "시작점" and isOutStartRoom[cur_player] is True and cur_room_loc[cur_player] != "복도": # 시작점 방을 나갔고 현재 방이 시작점이 아닌 경우
+        if cur_room_loc[cur_player] != "시작점" and isOutStartRoom[cur_player] is True and cur_room_loc[cur_player] != "복도" and cur_room_loc[cur_player] != "바깥":
             reason = reasoning(cur_player, cur_room_loc) # 추리
             if reason is None: # 추리를 하지 않은 경우
                 print("추리를 하지 않음. 다음 차례.")
@@ -664,8 +667,9 @@ def reasoning(cur_player, cur_room_loc): # 추리
     if suspect_var.get() not in suspects or weapon_var.get() not in weapons: return None
     else: return True
 def final_reasoning(cur_player): # 최종 추리
+    final_reasoning_sound.set_volume(0.5) # 최종 추리 소리 볼륨 설정
+    final_reasoning_sound.play() # 최종 추리 소리 재생
     def make_guess(): # 추리하기
-        reasoning_sound.play() # 추리 소리 재생
         selected_suspect = suspect_var.get() # 선택한 용의자
         selected_weapon = weapon_var.get() # 선택한 무기
         selected_room = room_var.get() # 선택한 방
@@ -700,16 +704,36 @@ def final_reasoning(cur_player): # 최종 추리
 
     # 추리 결과가 사건 봉투 내용과 일치하는 경우, 최종 추리 성공, 게임 승리, 해당 플레이어는 이제 게임에 참여 불가
     if suspect_var.get() == case_envelope["suspect"] and weapon_var.get() == case_envelope["tool"] and room_var.get() == case_envelope["place"]:
+        final_reasoning_sound.stop() # 최종 추리 소리 정지
+        win_sound.set_volume(0.5) # 승리 소리 볼륨 설정
+        win_sound.play() # 승리 소리 재생
         print("최종 추리 성공, ", cur_player, " 승리")
-        show_message("알림", "최종 추리 성공!")
         show_message("승리", f"{cur_player}님, 최종 추리 성공으로 승리하셨습니다.")
-        exit()
+        end_screen(False) # 게임 종료 화면
     else: # 추리 결과가 사건 봉투 내용과 일치하지 않는 경우, 최종 추리 실패, 게임 패배, 해당 플레이어는 이제 게임에 참여 불가
+        final_reasoning_sound.stop() # 최종 추리 소리 정지
+        lose_sound.play() # 패배 소리 재생
         print("최종 추리 실패, ", cur_player, " 패배")
-        show_message("알림", "최종 추리 실패!")
         show_message("패배", f"{cur_player}님, 최종 추리 실패로 패배하셨습니다.")
-        isLosed[cur_player] = True
+        lose_sound.stop() # 패배 소리 정지
         return False
+def end_screen(Losed): # 게임 종료 화면
+    cluedo_logo = pg.image.load("images/cluedo_logo.png") # 클루 로고 이미지 로드
+    cluedo_logo = pg.transform.scale(cluedo_logo, (12 * square_size, 4 * square_size))
+    pg.draw.rect(window, bg_color, (0, 0, window_size[0], window_size[1])) # 창 배경색으로 채우기
+    window.blit(cluedo_logo, (wall_pos[0] + 13 * square_size, wall_pos[1] - square_size)) # 로고 그리기
+    draw_card(list(case_envelope.values()), 0, None, True, Losed) # 사건 봉투 카드 그리기
+    font = pg.font.SysFont('malgungothic', square_size) # 폰트 설정
+    end_btn_pos = wall_pos[0] + 27 * square_size, wall_pos[1] + 17 * square_size, 4 * square_size, 2 * square_size # 버튼 위치 설정
+    draw_btn(end_btn_pos, "게임 종료", font, thickness)
+    pg.display.flip() # 창 업데이트
+    event = pg.event.wait() # 이벤트를 기다립니다
+    while True: # 무한 루프
+        for event in pg.event.get(): # 이벤트를 가져옵니다
+            if event.type == pg.MOUSEBUTTONDOWN:
+                x, y = pg.mouse.get_pos()
+                if end_btn_pos[0] <= x <= end_btn_pos[0] + end_btn_pos[2] and end_btn_pos[1] <= y <= end_btn_pos[1] + end_btn_pos[3]:
+                    exit() # 게임 종료
 def main(): # 메인 함수
     pg.init() # pg 초기화
     dice1 = 0  # 주사위 초기값 설정
@@ -745,18 +769,18 @@ def main(): # 메인 함수
     notMoved = False # 이동하지 않은 경우
     while running: # 게임이 실행 중인 동안
         if all(isLosed[player] for player in player_pos.keys()): # 모든 플레이어가 패배한 경우
+            lose_sound.set_volume(0.5) # 패배 소리 볼륨 설정
+            lose_sound.play() # 패배 소리 재생
             print("모든 플레이어가 패배함")
             show_message("알림", "모든 플레이어가 패배하여 게임이 종료되었습니다. 사건 봉투를 공개합니다.")
-            pg.draw.rect(window, bg_color, (0, 0, window_size[0], window_size[1])) # 창 배경색으로 채우기
-            draw_card(list(case_envelope.values()), 0, None, True)
-            pg.display.flip() # 창 업데이트            
-            time.sleep(2)
-            exit()
+            end_screen(True) # 게임 종료 화면
         cur_player = list(player_pos.keys())[cnt % 4] # 현재 플레이어
         if isLosed[cur_player] is True: # 해당 플레이어가 패배한 경우
+            laugh_sound.play() # 웃음소리 재생
             print(cur_player, "이/가 이미 패배함. 다음 차례로 넘어감")
             show_message("알림", f"{cur_player}님, 이미 패배하셨습니다. 다음 차례로 넘어갑니다.")
             cnt += 1
+            laugh_sound.stop() # 웃음소리 정지
             continue
         if notMoved: # 이동하지 않은 경우
             player_pos, dice1, dice2, previous_dice1, previous_dice2 = do_dice_roll(previous_dice1, previous_dice2, dice1, dice2, player_pos)
