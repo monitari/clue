@@ -37,13 +37,31 @@ pg.display.set_caption("CLUE - board game") # 창 제목 설정
 window.fill(bg_color) # 창 배경색으로 채우기
 cluedo_logo = pg.image.load("images/cluedo_logo.png") # 클루 로고 이미지 불러오기
 cluedo_logo = pg.transform.scale(cluedo_logo, (square_size * 12, square_size * 4)) # 클루도 로고 이미지 크기 조정
+main_theme = pg.mixer.Sound("sounds/ES_Covert Affairs - Christoffer Moe Ditlevsen.mp3") # 메인 테마 소리 불러오기
 roll_dice_sound = pg.mixer.Sound("sounds/dice.mp3") # 주사위 굴리는 소리 불러오기
 show_game_rule_sound = pg.mixer.Sound("sounds/show_game_rule.mp3") # 게임 규칙 소리 불러오기
 move_sound = pg.mixer.Sound("sounds/move.mp3") # 이동하는 소리 불러오기
 put_player_sound = pg.mixer.Sound("sounds/put_player.mp3") # 플레이어를 놓는 소리 불러오기
 enter_room_sound = pg.mixer.Sound("sounds/enter_room.mp3") # 방에 들어가는 소리 불러오기
 exit_room_sound = pg.mixer.Sound("sounds/exit_room.mp3") # 방을 나가는 소리 불러오기
-ambient_room_sound = pg.mixer.Sound("sounds/ambient_room.mp3") # 방에서의 소리 불러오기
+ambient_arcade= pg.mixer.Sound("sounds/ambient_arcade_room.mp3") # 게임룸 배경음 불러오기
+ambient_arcade.set_volume(0.02) # 게임룸 배경음 볼륨 설정
+ambient_bathroom = pg.mixer.Sound("sounds/ambient_bathroom.mp3") # 욕실 배경음 불러오기
+ambient_bathroom.set_volume(0.11) # 욕실 배경음 볼륨 설정
+ambient_bedroom = pg.mixer.Sound("sounds/ambient_bedroom.mp3") # 침실 배경음 불러오기
+ambient_bedroom.set_volume(0.71) # 침실 배경음 볼륨 설정
+ambient_cafeteria = pg.mixer.Sound("sounds/ambient_cafeteria.mp3") # 식당 배경음 불러오기
+ambient_cafeteria.set_volume(0.18) # 식당 배경음 볼륨 설정
+ambient_garage = pg.mixer.Sound("sounds/ambient_garage.mp3") # 차고 배경음 불러오기
+ambient_garage.set_volume(0.1) # 차고 배경음 볼륨 설정
+ambient_kitchen = pg.mixer.Sound("sounds/ambient_kitchen_room.mp3") # 부엌 배경음 불러오기
+ambient_kitchen.set_volume(0.6) # 부엌 배경음 볼륨 설정
+ambient_library = pg.mixer.Sound("sounds/ambient_library_room.mp3") # 서재 배경음 불러오기
+ambient_library.set_volume(0.09) # 서재 배경음 볼륨 설정
+ambient_livingroom = pg.mixer.Sound("sounds/ambient_living_room.mp3") # 거실 배경음 불러오기
+ambient_livingroom.set_volume(0.5) # 거실 배경음 볼륨 설정
+ambient_yard = pg.mixer.Sound("sounds/ambient_yard.mp3") # 마당 배경음 불러오기
+ambient_yard.set_volume(0.3) # 마당 배경음 볼륨 설정
 walking_sound = pg.mixer.Sound("sounds/walking.mp3") # 걷는 소리 불러오기
 reasoning_sound = pg.mixer.Sound("sounds/reasoning.mp3") # 추리하는 소리 불러오기
 final_reasoning_sound = pg.mixer.Sound("sounds/final_reasoning.mp3") # 최종 추리하는 소리 불러오기
@@ -60,8 +78,9 @@ suspects = { # 용의자카드
     "화이트": WHITE
 }
 weapons = ["파이프", "밧줄", "단검", "렌치", "권총", "촛대"]  # 도구카드
-locs = ["침실", "욕실", "서제", "부엌", "식당", "거실", "마당", "차고", "게임룸"]  # 장소카드
-room_names = locs.copy() # 방 이름 설정
+locs = {"침실" : "bedroom", "욕실" : "bathroom", "서제" : "library", "부엌" : "kitchen",
+        "식당" : "cafeteria", "거실" : "livingroom", "마당" : "yard", "차고" : "garage", "게임룸" : "arcade" } # 장소카드
+room_names = list(locs.keys()).copy() # 방 이름
 room_names.insert(1, "") # 이름 빈 방
 room_names.insert(8, "") # 이름 빈 방
 room_names.insert(9, "") # 이름 빈 방
@@ -109,15 +128,15 @@ room_pos = [ # 방의 위치 설정
 rooms = [(wall_pos[0] + x * square_size, wall_pos[1] + y * square_size, w * square_size, h * square_size) 
          for (x, y), (w, h) in zip(room_pos, room_size)] # 방의 위치와 크기를 결합
 room_door_pos = { # 방의 문 위치 설정
-    locs[0]: (6, 5), # 침실
-    locs[1]: (8, 4), # 욕실
-    locs[2]: (9, 4), # 서제
-    locs[3]: (13, 6), # 부엌
-    locs[4]: (12, 10), # 식당
-    locs[5]: (13, 14), # 거실
-    locs[6]: (9, 16), # 마당
-    locs[7]: (6, 15), # 차고
-    locs[8]: (6, 11),  # 게임룸
+    list(locs.keys())[0]: (6,5), # 침실
+    list(locs.keys())[1]: (8, 4), # 욕실
+    list(locs.keys())[2]: (9, 4), # 서제
+    list(locs.keys())[3]: (13, 6), # 부엌
+    list(locs.keys())[4]: (12, 10), # 식당
+    list(locs.keys())[5]: (13, 14), # 거실
+    list(locs.keys())[6]: (9, 16), # 마당
+    list(locs.keys())[7]: (6, 15), # 차고
+    list(locs.keys())[8]: (6, 11),  # 게임룸
 }
 room_walls_pos = [ # 방 벽 위치 설정
     ((0, 2), (6, 2)),
@@ -194,7 +213,7 @@ isLosed = { # 패배 여부
 def shuffle_and_distribute_cards(): # 카드 섞고 나눠주기
     su = list(suspects.keys()) # 용의자 카드
     wp = list(weapons) # 도구 카드
-    lo = list(locs) # 장소 카드
+    lo = list(locs.keys()) # 장소 카드
     random.shuffle(su) # 용의자 카드 섞기
     random.shuffle(wp) # 도구 카드 섞기
     random.shuffle(lo) # 장소 카드 섞기
@@ -404,7 +423,7 @@ def handle_room_entry(new_pos, cur_player, isOutStartRoom, other_players_pos, cu
                     if final_reasoning(cur_player) == False: 
                         isLosed[cur_player] = True
                         cur_room_loc[cur_player] = "바깥"
-                        return -1, -1
+                        return 0, -1
     return new_pos
 def do_dice_roll(previous_dice1, previous_dice2, dice1, dice2, player_pos): # 주사위 굴리기
     if previous_dice1 is None and previous_dice2 is None:  # 이전 주사위 결과가 없는 경우
@@ -449,8 +468,8 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
         "욕실": {"next_room": "침실", "new_pos": (random.randint(0, 5), random.randint(2, 7))}
     }
     print(cur_player, "현재 방 위치 :", player_room_loc, cur_room_loc[cur_player]) # 현재 방 위치 출력
-    if new_pos == (-1, -1): return player_pos, False # 이동하지 않은 경우
-    if cur_room_loc[cur_player] != "복도": # 현재 방이 복도인 경우
+    if new_pos == (0, -1): return player_pos, False # 이동하지 않은 경우
+    if cur_room_loc[cur_player] != "복도": # 현재 방이 복도가 아닌 경우
         if isOutStartRoom[cur_player] is True and cur_room_loc[cur_player] == player_room_loc: # 시작점 방을 나갔고 현재 방이 그대로인 경우 (다른 방 이동을 위한)
             cur_room = cur_room_loc[cur_player] # 현재 방 설정
             if cur_room in room_transitions: # 현재 방이 방 사이 이동 목록에 있는 경우
@@ -677,7 +696,6 @@ def draw_all(font, grid, room_walls, thickness, player_pos, dice1, dice2, btn_po
     pg.display.flip() # 창 업데이트
 def reasoning(cur_player, cur_room_loc): # 추리
     def make_guess(): # 추리하기
-        ambient_room_sound.stop() # 방 소리 정지
         reasoning_sound.play() # 추리 소리 재생
         selected_suspect = suspect_var.get() # 선택한 용의자
         selected_weapon = weapon_var.get() # 선택한 무기
@@ -706,7 +724,9 @@ def reasoning(cur_player, cur_room_loc): # 추리
     center_width = (windows_width / 2) - (app_width / 2)
     center_height = (windows_height / 2) - (app_height / 2)
     root.geometry(f"{app_width}x{app_height}+{int(center_width)}+{int(center_height)}")
-
+    
+    main_theme.set_volume(0.06) # 메인 테마 볼륨 설정
+    eval(f"ambient_{locs[cur_room_loc[cur_player]]}").play(-1) # 현재 방의 배경음악 재생
     tk.Label(root, text="용의자 선택").grid(row=0, column=0, padx=10, pady=5)
     tk.Label(root, text="살인 도구 선택").grid(row=1, column=0, padx=10, pady=5)
     suspects_list = list(suspects.keys()) # 용의자 목록
@@ -719,13 +739,17 @@ def reasoning(cur_player, cur_room_loc): # 추리
     weapon_menu.grid(row=1, column=1, padx=10, pady=5) # 무기 메뉴 그리기
 
     tk.Button(root, text="추리하기", command=make_guess).grid(row=2, columnspan=2, pady=10) # 추리하기 버튼
-    ambient_room_sound.play() # 방 소리 재생
     root.mainloop()
-    if suspect_var.get() not in suspects or weapon_var.get() not in weapons: return None # 선택한 용의자 또는 무기가 없는 경우
-    else: return True # 추리를 한 경우
+    if suspect_var.get() not in suspects or weapon_var.get() not in weapons: 
+        eval(f"ambient_{locs[cur_room_loc[cur_player]]}").fadeout(500) # 현재 방의 배경음악 정지
+        return None # 선택한 용의자 또는 무기가 없는 경우
+    else:
+        eval(f"ambient_{locs[cur_room_loc[cur_player]]}").fadeout(500) # 현재 방의 배경음악 정지
+        return True # 추리를 한 경우
 def final_reasoning(cur_player): # 최종 추리
-    final_reasoning_sound.set_volume(0.5) # 최종 추리 소리 볼륨 설정
-    final_reasoning_sound.play() # 최종 추리 소리 재생
+    main_theme.set_volume(0) # 메인 테마 볼륨 설정
+    final_reasoning_sound.set_volume(0.2) # 최종 추리 소리 볼륨 설정
+    final_reasoning_sound.play(-1) # 최종 추리 소리 재생
     def make_guess(): # 추리하기
         selected_suspect = suspect_var.get() # 선택한 용의자
         selected_weapon = weapon_var.get() # 선택한 무기
@@ -750,7 +774,7 @@ def final_reasoning(cur_player): # 최종 추리
     tk.Label(root, text="장소 선택").grid(row=2, column=0, padx=10, pady=5) # 장소 선택 레이블
     suspects_list = list(suspects.keys()) # 용의자 목록
     weapons_list = list(weapons) # 무기 목록
-    rooms_list = locs # 방 목록
+    rooms_list = list(locs.keys()) # 방 목록
     suspect_var = tk.StringVar() # 용의자 변수
     weapon_var = tk.StringVar() # 무기 변수
     room_var = tk.StringVar() # 방 변수
@@ -766,7 +790,7 @@ def final_reasoning(cur_player): # 최종 추리
     # 추리 결과가 사건 봉투 내용과 일치하는 경우, 최종 추리 성공, 게임 승리, 해당 플레이어는 이제 게임에 참여 불가
     if suspect_var.get() == case_envelope["suspect"] and weapon_var.get() == case_envelope["tool"] and room_var.get() == case_envelope["place"]: 
         final_reasoning_sound.stop() # 최종 추리 소리 정지
-        win_sound.set_volume(0.5) # 승리 소리 볼륨 설정
+        win_sound.set_volume(0.2) # 승리 소리 볼륨 설정
         win_sound.play() # 승리 소리 재생
         print("최종 추리 성공, ", cur_player, "승리")
         show_message("승리", f"{cur_player}님, 최종 추리 성공으로 승리하셨습니다.")
@@ -830,6 +854,8 @@ def main(): # 메인 함수
     notMoved = False # 이동하지 않은 경우
                      
     while running: # 게임이 실행 중인 동안
+        main_theme.set_volume(0.18) # 메인 테마 볼륨 설정
+        if main_theme.get_num_channels() == 0: main_theme.play(-1) # 메인 테마 소리 재생 (재생 중이 아닌 경우)
         for event in pg.event.get(): # 이벤트 리스트 반복
             cur_player = list(player_pos.keys())[cnt % 4] # 현재 플레이어      
             if isLosed[cur_player] is True: # 해당 플레이어가 패배한 경우
@@ -840,7 +866,7 @@ def main(): # 메인 함수
                 laugh_sound.stop() # 웃음소리 정지
                 continue
             elif all(isLosed[player] for player in player_pos.keys()): # 모든 플레이어가 패배한 경우
-                lose_sound.set_volume(0.5) # 패배 소리 볼륨 설정
+                lose_sound.set_volume(0.1) # 패배 소리 볼륨 설정
                 lose_sound.play() # 패배 소리 재생
                 print("모든 플레이어가 패배함")
                 show_message("알림", "모든 플레이어가 패배하여 게임이 종료되었습니다. 사건 봉투를 공개합니다.")
@@ -871,6 +897,7 @@ def main(): # 메인 함수
                 if event.type == pg.MOUSEBUTTONDOWN: 
                     x, y = event.pos  # 클릭한 위치를 가져옵니다.
                     if handle_dice_click(x, y, dice_btn_pos) : # 주사위 굴리기 버튼을 누른 경우
+                        main_theme.set_volume(0.12) # 메인 테마 볼륨 설정
                         player_pos, dice1, dice2, previous_dice1, previous_dice2 = do_dice_roll(previous_dice1, previous_dice2, dice1, dice2, player_pos)
                         draw_all(font, grid, room_walls, thickness, player_pos, dice1, dice2, dice_btn_pos, cur_player) # 모든 요소 그리기
                         other_players_poss = {player[0]: (player[1][0], player[1][1]) 
