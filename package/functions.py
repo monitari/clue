@@ -637,7 +637,7 @@ def final_reasoning(cur_player, case_envelope): # 최종 추리
         win_sound.play() # 승리 소리 재생
         print("최종 추리 성공, ", cur_player, "승리")
         show_message("승리", f"{cur_player}님, 최종 추리 성공으로 승리하셨습니다.")
-        end_screen(False, case_envelope) # 게임 종료 화면
+        end_screen(False, case_envelope, cur_player) # 게임 종료 화면
     else: # 추리 결과가 사건 봉투 내용과 일치하지 않는 경우, 최종 추리 실패, 게임 패배, 해당 플레이어는 이제 게임에 참여 불가
         final_reasoning_sound.stop() # 최종 추리 소리 정지
         lose_sound.play() # 패배 소리 재생
@@ -646,13 +646,13 @@ def final_reasoning(cur_player, case_envelope): # 최종 추리
         lose_sound.stop() # 패배 소리 정지
         return False
     
-def end_screen(Losed, case_envelope): # 게임 종료 화면
+def end_screen(Losed, case_envelope, cur_player): # 게임 종료 화면
     final_reasoning_sound.stop() # 최종 추리 소리 정지
     cluedo_logo = pg.image.load("images/cluedo_logo.png") # 클루 로고 이미지 로드
     cluedo_logo = pg.transform.scale(cluedo_logo, (12 * square_size, 4 * square_size))
     pg.draw.rect(window, WHITE, (0, 0, window_size[0], window_size[1])) # 창 하얀색으로 채우기
     window.blit(cluedo_logo, (wall_pos[0] + 13 * square_size, wall_pos[1] - square_size)) # 로고 그리기
-    draw_card(list(case_envelope.values()), 0, None, case_envelope, True, Losed) 
+    draw_card(list(case_envelope.values()), 0, cur_player, case_envelope, True, Losed) # 사건봉투 카드 그리기
     font = pg.font.SysFont('malgungothic', square_size) # 폰트 설정
     end_btn_pos = wall_pos[0] + 27 * square_size, wall_pos[1] + 17 * square_size, 4 * square_size, 2 * square_size # 버튼 위치 설정
     draw_btn(end_btn_pos, "게임 종료", font, thickness)

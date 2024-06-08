@@ -47,7 +47,7 @@ def main(): # 메인 함수
                 if lose_sound.get_num_channels() == 0: lose_sound.play(-1) # 패배 사운드 재생 (재생 중이 아닌 경우)
                 print("모든 플레이어가 패배함")
                 show_message("알림", "모든 플레이어가 패배하여 게임이 종료되었습니다.\n사건 봉투를 공개합니다.")
-                end_screen(True, case_envelope) # 게임 종료 화면
+                end_screen(True, case_envelope, cur_player) # 게임 종료 화면
             if isLosed[cur_player] is True: # 해당 플레이어가 패배한 경우
                 print() # 줄바꿈
                 print(cur_player, "이/가 이미 패배함. 다음 차례로 넘어감")
