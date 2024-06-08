@@ -203,8 +203,8 @@ hasReasoned = { # 추리 여부
     list(suspects.keys())[3]: False, # 머스타드
 }
 isLosed = { # 패배 여부
-    list(suspects.keys())[0]: True, # 피콕
-    list(suspects.keys())[1]: True, # 플럼
-    list(suspects.keys())[2]: True, # 스칼렛
+    list(suspects.keys())[0]: False, # 피콕
+    list(suspects.keys())[1]: False, # 플럼
+    list(suspects.keys())[2]: False, # 스칼렛
     list(suspects.keys())[3]: False, # 머스타드
 }
