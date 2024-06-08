@@ -11,6 +11,7 @@ GREEN = (0, 128, 0, 255) # 초록색
 GRAY = (200, 200, 200, 255) # 회색
 
 # 게임 설정
+PLAYER = 4 # 플레이어 수 설정
 square_size = 30  # 기본 사각형 크기 설정
 window_size = (square_size * 40, square_size * 24) # 창 크기 설정
 bg_color = WHITE # 창 배경색 설정
@@ -53,8 +54,11 @@ ambient_yard.set_volume(0.3) # 마당 배경음 볼륨 설정
 walking_sound = pg.mixer.Sound("sounds/walking.mp3") # 걷는 소리 불러오기
 reasoning_sound = pg.mixer.Sound("sounds/reasoning.mp3") # 추리하는 소리 불러오기
 final_reasoning_sound = pg.mixer.Sound("sounds/final_reasoning.mp3") # 최종 추리하는 소리 불러오기
+final_reasoning_sound.set_volume(0.5) # 최종 추리하는 소리 볼륨 설정
 win_sound = pg.mixer.Sound("sounds/win.mp3") # 승리하는 소리 불러오기
+win_sound.set_volume(0.6) # 승리하는 소리 볼륨 설정
 lose_sound = pg.mixer.Sound("sounds/lose.mp3") # 패배하는 소리 불러오기
+lose_sound.set_volume(0.6) # 패배하는 소리 볼륨 설정
 
 # 카드 설정
 suspects = { # 용의자카드
@@ -199,8 +203,8 @@ hasReasoned = { # 추리 여부
     list(suspects.keys())[3]: False, # 머스타드
 }
 isLosed = { # 패배 여부
-    list(suspects.keys())[0]: False, # 피콕
-    list(suspects.keys())[1]: False, # 플럼
-    list(suspects.keys())[2]: False, # 스칼렛
+    list(suspects.keys())[0]: True, # 피콕
+    list(suspects.keys())[1]: True, # 플럼
+    list(suspects.keys())[2]: True, # 스칼렛
     list(suspects.keys())[3]: False, # 머스타드
 }

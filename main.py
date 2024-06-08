@@ -2,8 +2,8 @@ import pygame as pg # 파이게임 라이브러리 불러오기
 import os # 운영체제 라이브러리 불러오기
 
 pg.init() # pygame 초기화
-from setting import * # setting.py 파일에서 모든 변수 및 함수 불러오기
-from functions import * # functions.py 파일에서 모든 함수 불러오기
+from package.setting import * # setting.py 파일에서 모든 변수 및 함수 불러오기
+from package.functions import * # functions.py 파일에서 모든 함수 불러오기
 os.system('cls') # 콘솔 화면 지우기
 
 def main(): # 메인 함수
@@ -37,21 +37,23 @@ def main(): # 메인 함수
     notMoved = False # 이동하지 않은 경우
                      
     while running: # 게임이 실행 중인 동안
+        global isLosed # 패배 여부
         main_theme.set_volume(0.18) # 메인 테마 볼륨 설정
         if main_theme.get_num_channels() == 0: main_theme.play(-1) # 메인 테마 소리 재생 (재생 중이 아닌 경우)
         for event in pg.event.get(): # 이벤트 리스트 반복
-            cur_player = list(player_pos.keys())[cnt % 4] # 현재 플레이어
+            cur_player = list(player_pos.keys())[cnt % PLAYER] # 현재 플레이어
+            if all(isLosed.values()): # 모든 플레이어가 패배한 경우
+                main_theme.stop() # 메인 테마 정지
+                if lose_sound.get_num_channels() == 0: lose_sound.play() # 패배 사운드 재생 (재생 중이 아닌 경우)
+                print("모든 플레이어가 패배함")
+                show_message("알림", "모든 플레이어가 패배하여 게임이 종료되었습니다.\n사건 봉투를 공개합니다.")
+                end_screen(True, case_envelope) # 게임 종료 화면
             if isLosed[cur_player] is True: # 해당 플레이어가 패배한 경우
+                print() # 줄바꿈
                 print(cur_player, "이/가 이미 패배함. 다음 차례로 넘어감")
-                show_message("알림", f"{cur_player}님, 이미 패배하셨습니다. 다음 차례로 넘어갑니다.")
+                show_message("알림", f"{cur_player}님, 이미 패배하셨습니다.\n다음 차례로 넘어갑니다.")
                 cnt += 1
                 continue
-            elif all(isLosed[player] for player in player_pos.keys()): # 모든 플레이어가 패배한 경우
-                lose_sound.set_volume(0.1) # 패배 소리 볼륨 설정
-                lose_sound.play() # 패배 소리 재생
-                print("모든 플레이어가 패배함")
-                show_message("알림", "모든 플레이어가 패배하여 게임이 종료되었습니다. 사건 봉투를 공개합니다.")
-                end_screen(True) # 게임 종료 화면
             if event.type == pg.MOUSEBUTTONDOWN: # 마우스 버튼을 누른 경우
                 x, y = event.pos  # 마우스 위치를 가져옵니다
                 if (gmrule_btn_pos[0] <= x <= gmrule_btn_pos[0] + gmrule_btn_pos[2] 
