@@ -66,17 +66,21 @@ def draw_card(cards, start_height, cur_player, case_envelope, lastShowing = Fals
     small_font = pg.font.SysFont('malgungothic', 15)  # 작은 폰트 설정
     text1 = small_font.render("현재 플레이어", True, wall_color) # 현재 플레이어
     text1_rect = text1.get_rect(center=(card_pos[0] + card_width * 8, card_pos[1] +  3 * square_size)) # 현재 플레이어 위치 설정
-    text2 = card_font.render(cur_player, True, wall_color) # 플레이어 이름
+    text2 = card_font.render(cur_player, True, suspects[cur_player]) # 플레이어 이름 설정
     text2_rect = text2.get_rect(center=(card_pos[0] + card_width * 8, text1_rect.bottom + text2.get_height() / 2)) # 플레이어 이름 위치 설정
+    if suspects[cur_player] == YELLOW: # 현재 플레이어가 머스타드인 경우 (노랑색인 경우)
+        text3 = card_font.render(cur_player, True, BLACK)  # 글씨 그림자 설정
+        text3_rect = text3.get_rect(center=(card_pos[0] + card_width * 8 + 2, text1_rect.bottom + text3.get_height() / 2 + 2))
     
     p = [None] * PLAYER # 플레이어
     p_rect = [None] * PLAYER # 플레이어 위치
     for i in range(PLAYER): # 각 플레이어에 대해
-        p[i] = small_font.render(list(suspects.keys())[i], True, RED if cur_player == list(suspects.keys())[i] else wall_color) # 플레이어 색상 설정
+        p[i] = small_font.render(list(suspects.keys())[i], True, suspects[list(suspects.keys())[i]] if cur_player == list(suspects.keys())[i] else wall_color)
         p_rect[i] = p[i].get_rect(center=(card_pos[0] + card_width * 8, card_pos[1] + (i-1) * square_size)) # 플레이어 위치 설정
     if lastShowing is False: # 아직 때가 아님
         for i in range(PLAYER): window.blit(p[i], p_rect[i]) # 플레이어 순서 출력
         window.blit(text1, text1_rect) # 플레이어 순서 출력
+        if suspects[cur_player] == YELLOW: window.blit(text3, text3_rect)
         window.blit(text2, text2_rect) # 플레이어 이름 출력
 
     for i, card in enumerate(cards): # 각 카드에 대해
@@ -112,12 +116,12 @@ def add_rooms_to_grid(grid): # 방을 그리드에 추가하는 함수
             for y in range(room.top, room.bottom, square_size): grid.add((x, y)) # 방의 각 좌표를 그리드에 추가
 
 def add_walls_to_grid(grid, grid_color, thickness): # 벽을 그리드에 추가하는 함수
-    font = pg.font.Font(None, square_size) # 폰트 객체 생성
+    #font = pg.font.Font(None, square_size) # 폰트 객체 생성
     # question_mark = font.render("?", True, RED) # "?" 문자를 Surface 객체로 변환
     for x in range(wall_pos.left, wall_pos.right, square_size): # 벽의 각 좌표에 대해
         for y in range(wall_pos.top, wall_pos.bottom, square_size): # 벽의 각 좌표에 대해
             rect = pg.Rect(x, y, square_size, square_size) # 사각형 생성
-            if (x, y) in grid: pg.draw.rect(window, bg_color, rect) # 그리드에 있는 경우 배경색으로 채우기
+            if (x, y) in grid: pg.draw.rect(window, LIGHT_GRAY, rect) # 그리드에 있는 경우 회색으로 채우기 
             else: # 그리드에 없는 경우
                 # if (rect[0], rect[1]) in grid_bonus: # 보너스카드 위치에 있는 경우
                 #     pg.draw.rect(window, brighten_color(RED, True), rect) # 보너스카드 위치에 연한 빨간색으로 채우기
@@ -133,7 +137,7 @@ def draw_room_walls(room_walls, thickness): # 방 벽 그리기
 def draw_room_names(font): # 방 이름 그리기
     if len(rooms) >= len(room_names): # 방의 수가 방 이름의 수보다 많거나 같은 경우
         for i, room in enumerate(rooms): # 각 방에 대해
-            text = font.render(room_names[i], True, GRAY) # 방 이름 설정
+            text = font.render(room_names[i], True, DARK_GRAY) # 방 이름 설정
             text_rect = text.get_rect(center=(room[0] + square_size * (6 if len(room_names[i]) == 3 else 4) / 5, room[1] + square_size * 2 / 5))
             window.blit(text, text_rect)
 
@@ -161,8 +165,8 @@ def roll_dice(): # 주사위 굴리기
 def draw_dice(dice1, dice2): # 주사위 그리기
     dice1_pos = wall_pos[0] + 21 * square_size, wall_pos[1] + 17 * square_size, 2 * square_size, 2 * square_size # 주사위 위치 및 크기 설정
     dice2_pos = wall_pos[0] + 24 * square_size, wall_pos[1] + 17 * square_size, 2 * square_size, 2 * square_size # 주사위 위치 및 크기 설정
-    pg.draw.rect(window, bg_color, dice1_pos) # 주사위 1의 배경색 설정
-    pg.draw.rect(window, bg_color, dice2_pos) # 주사위 2의 배경색 설정
+    pg.draw.rect(window, WHITE, dice1_pos) # 주사위 1의 배경색 설정
+    pg.draw.rect(window, WHITE, dice2_pos) # 주사위 2의 배경색 설정
     pg.draw.rect(window, wall_color, dice1_pos, thickness) # 주사위 1의 외곽선 그리기
     pg.draw.rect(window, wall_color, dice2_pos, thickness) # 주사위 2의 외곽선 그리기
     dice_font = pg.font.SysFont('malgungothic', square_size) # 주사위 폰트 설정
@@ -352,8 +356,8 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
                         print("다른 플레이어가 이미 있음. 이동할 수 없는 위치")
                         show_message("실패", "다른 플레이어가 있습니다.\n이동할 수 없는 위치입니다.")
                         continue
-                    pg.draw.rect(window, bg_color, ((2 * will_start_pos[0] + square_size - player_size - 5) / 2, 
-                        (2 * will_start_pos[1] + square_size - player_size - 5) / 2, player_size + 5, player_size + 5)) # 플레이어 이동 전 위치 배경색으로 채우기
+                    pg.draw.rect(window, WHITE, ((2 * will_start_pos[0] + square_size - player_size - 5) / 2, 
+                        (2 * will_start_pos[1] + square_size - player_size - 5) / 2, player_size + 5, player_size + 5)) # 플레이어 이동 전 위치 하얀색으로 채우기
                     will_start_pos = wall_pos[0] + start_room_door_pos[1][0] * square_size, wall_pos[1] + start_room_door_pos[1][1] * square_size # 이동할 위치 설정
                     player_pos = start_room_door_pos[1]
                     draw_player(create_player(cur_player, start_room_door_pos[1]), True, True) # 플레이어 그리기
@@ -365,8 +369,8 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
                         print("다른 플레이어가 이미 있음. 이동할 수 없는 위치")
                         show_message("실패", "다른 플레이어가 있습니다.\n이동할 수 없는 위치입니다.")
                         continue
-                    pg.draw.rect(window, bg_color, ((2 * will_start_pos[0] + square_size - player_size - 5) / 2, 
-                        (2 * will_start_pos[1] + square_size - player_size - 5) / 2, player_size + 5, player_size + 5)) # 플레이어 이동 전 위치 배경색으로 채우기
+                    pg.draw.rect(window, WHITE, ((2 * will_start_pos[0] + square_size - player_size - 5) / 2, 
+                        (2 * will_start_pos[1] + square_size - player_size - 5) / 2, player_size + 5, player_size + 5)) # 플레이어 이동 전 위치 하얀색으로 채우기
                     will_start_pos = wall_pos[0] + start_room_door_pos[3][0] * square_size, wall_pos[1] + start_room_door_pos[3][1] * square_size # 이동할 위치 설정
                     player_pos = start_room_door_pos[3]
                     draw_player(create_player(cur_player, start_room_door_pos[3]), True, True) # 플레이어 그리기
@@ -378,8 +382,8 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
                         print("다른 플레이어가 이미 있음. 이동할 수 없는 위치")
                         show_message("실패", "다른 플레이어가 있습니다.\n이동할 수 없는 위치입니다.")
                         continue
-                    pg.draw.rect(window, bg_color, ((2 * will_start_pos[0] + square_size - player_size - 5) / 2, 
-                        (2 * will_start_pos[1] + square_size - player_size - 5) / 2, player_size + 5, player_size + 5)) # 플레이어 이동 전 위치 배경색으로 채우기
+                    pg.draw.rect(window, WHITE, ((2 * will_start_pos[0] + square_size - player_size - 5) / 2, 
+                        (2 * will_start_pos[1] + square_size - player_size - 5) / 2, player_size + 5, player_size + 5)) # 플레이어 이동 전 위치 하얀색으로 채우기
                     will_start_pos = wall_pos[0] + start_room_door_pos[0][0] * square_size, wall_pos[1] + start_room_door_pos[0][1] * square_size # 이동할 위치 설정
                     player_pos = start_room_door_pos[0]
                     draw_player(create_player(cur_player, start_room_door_pos[0]), True, True) # 플레이어 그리기
@@ -391,8 +395,8 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
                         print("다른 플레이어가 이미 있음. 이동할 수 없는 위치")
                         show_message("실패", "다른 플레이어가 있습니다.\n이동할 수 없는 위치입니다.")
                         continue
-                    pg.draw.rect(window, bg_color, ((2 * will_start_pos[0] + square_size - player_size - 5) / 2, 
-                        (2 * will_start_pos[1] + square_size - player_size - 5) / 2, player_size + 5, player_size + 5)) # 플레이어 이동 전 위치 배경색으로 채우기
+                    pg.draw.rect(window, WHITE, ((2 * will_start_pos[0] + square_size - player_size - 5) / 2, 
+                        (2 * will_start_pos[1] + square_size - player_size - 5) / 2, player_size + 5, player_size + 5)) # 플레이어 이동 전 위치 하얀색으로 채우기
                     will_start_pos = wall_pos[0] + start_room_door_pos[2][0] * square_size, wall_pos[1] + start_room_door_pos[2][1] * square_size # 이동할 위치 설정
                     player_pos = start_room_door_pos[2] 
                     draw_player(create_player(cur_player, start_room_door_pos[2]), True, True) # 플레이어 그리기
@@ -646,7 +650,7 @@ def end_screen(Losed, case_envelope): # 게임 종료 화면
     final_reasoning_sound.stop() # 최종 추리 소리 정지
     cluedo_logo = pg.image.load("images/cluedo_logo.png") # 클루 로고 이미지 로드
     cluedo_logo = pg.transform.scale(cluedo_logo, (12 * square_size, 4 * square_size))
-    pg.draw.rect(window, bg_color, (0, 0, window_size[0], window_size[1])) # 창 배경색으로 채우기
+    pg.draw.rect(window, WHITE, (0, 0, window_size[0], window_size[1])) # 창 하얀색으로 채우기
     window.blit(cluedo_logo, (wall_pos[0] + 13 * square_size, wall_pos[1] - square_size)) # 로고 그리기
     draw_card(list(case_envelope.values()), 0, None, case_envelope, True, Losed) 
     font = pg.font.SysFont('malgungothic', square_size) # 폰트 설정

@@ -3,18 +3,20 @@ import pygame as pg
 # 색상 설정
 BLACK = (0, 0, 0, 255) # 검은색
 WHITE = (255, 255, 255, 255) # 흰색
-BLUE = (0, 0, 255, 255) # 파란색
+BLUE = (0, 0, 220, 255) # 파란색
 PURPLE = (128, 0, 128, 255) # 보라색
-RED = (255, 0, 0, 255) # 빨간색
-YELLOW = (255, 255, 0, 255) # 노란색
+RED = (220, 0, 0, 255) # 빨간색
+YELLOW = (220, 220, 0, 255) # 노란색
 GREEN = (0, 128, 0, 255) # 초록색
-GRAY = (200, 200, 200, 255) # 회색
+GRAY = (220, 220, 220, 255) # 회색
+LIGHT_GRAY = (240, 240, 240, 255) # 밝은 회색
+DARK_GRAY = (100, 100, 100, 255) # 짙은 회색
 
 # 게임 설정
 PLAYER = 4 # 플레이어 수 설정
 square_size = 30  # 기본 사각형 크기 설정
 window_size = (square_size * 40, square_size * 24) # 창 크기 설정
-bg_color = WHITE # 창 배경색 설정
+bg_color = WHITE # 배경색 설정
 wall_color = BLACK # 벽의 색상 설정
 wall_pos = pg.Rect(window_size[0] / 2 - square_size * 19, window_size [1] / 2 - square_size * 10, 20 * square_size, 20 * square_size) # 벽의 위치 설정
 grid_color = GRAY  # 그리드 색상

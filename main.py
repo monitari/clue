@@ -60,7 +60,8 @@ def main(): # 메인 함수
                 and gmrule_btn_pos[1] <= y <= gmrule_btn_pos[1] + gmrule_btn_pos[3]): # 게임 규칙 버튼을 누른 경우
                     show_game_rules() # 게임 규칙 표시
             if notMoved: # 이동하지 않은 경우
-                player_pos, dice1, dice2, previous_dice1, previous_dice2 = do_dice_roll(previous_dice1, previous_dice2, dice1, dice2, player_pos)
+                player_pos, dice1, dice2, previous_dice1, previous_dice2 = do_dice_roll(previous_dice1, previous_dice2, 
+                                                                                        dice1, dice2, player_pos) # 주사위 굴리기
                 draw_all(font, grid, room_walls, thickness, player_pos, dice1, dice2, 
                          dice_btn_pos, cur_player, case_envelope, player_cards) # 모든 요소 그리기
                 other_players_poss = {player[0]: (player[1][0], player[1][1]) 
@@ -84,7 +85,8 @@ def main(): # 메인 함수
                     x, y = event.pos  # 클릭한 위치를 가져옵니다.
                     if handle_dice_click(x, y, dice_btn_pos) : # 주사위 굴리기 버튼을 누른 경우
                         main_theme.set_volume(0.12) # 메인 테마 볼륨 설정
-                        player_pos, dice1, dice2, previous_dice1, previous_dice2 = do_dice_roll(previous_dice1, previous_dice2, dice1, dice2, player_pos)
+                        player_pos, dice1, dice2, previous_dice1, previous_dice2 = do_dice_roll(previous_dice1, previous_dice2, 
+                                                                                                dice1, dice2, player_pos) # 주사위 굴리기
                         draw_all(font, grid, room_walls, thickness, player_pos, dice1, dice2, 
                                  dice_btn_pos, cur_player, case_envelope, player_cards) # 모든 요소 그리기
                         other_players_poss = {player[0]: (player[1][0], player[1][1]) 
@@ -105,5 +107,5 @@ def main(): # 메인 함수
                                  dice_btn_pos, cur_player, case_envelope, player_cards) # 모든 요소 그리기
     pg.quit() # pg 종료 
 
-if __name__ == "__main__":
+if __name__ == "__main__": # 메인 함수 실행
     main() # 메인 함수 실행
