@@ -6,7 +6,7 @@ import ctypes # 윈도우 API 사용
 import time # 시간 라이브러리 불러오기
 import win32gui # 윈도우 API 사용
 import threading # 스레드 라이브러리 불러오기
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QTextEdit # PyQt5 라이브러리 불러오기
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QTextEdit, QCheckBox, QLabel, QMessageBox, QGridLayout # PyQt5 
 from PyQt5.QtGui import QFont # 폰트 불러오기
 import sys # 시스템 라이브러리 불러오기
 import os # 운영체제 라이브러리 불러오기
@@ -164,7 +164,7 @@ def roll_dice(): # 주사위 굴리기
 
 def draw_dice(dice1, dice2): # 주사위 그리기
     dice1_pos = wall_pos[0] + 21 * square_size, wall_pos[1] + 17 * square_size, 2 * square_size, 2 * square_size # 주사위 위치 및 크기 설정
-    dice2_pos = wall_pos[0] + 24 * square_size, wall_pos[1] + 17 * square_size, 2 * square_size, 2 * square_size # 주사위 위치 및 크기 설정
+    dice2_pos = wall_pos[0] + 23.5 * square_size, wall_pos[1] + 17 * square_size, 2 * square_size, 2 * square_size # 주사위 위치 및 크기 설정
     pg.draw.rect(window, WHITE, dice1_pos) # 주사위 1의 배경색 설정
     pg.draw.rect(window, WHITE, dice2_pos) # 주사위 2의 배경색 설정
     pg.draw.rect(window, wall_color, dice1_pos, thickness) # 주사위 1의 외곽선 그리기
@@ -179,7 +179,8 @@ def draw_btn(pos, text, font, thickness): # 버튼 그리기
     font = pg.font.SysFont('malgungothic', square_size // 2) # 폰트 설정
     pg.draw.rect(window, wall_color, pos, thickness) # 버튼 외곽선 그리기
     text = font.render(text, True, BLACK)
-    text_rect = text.get_rect(center=(pos[0] + square_size * 2, pos[1] + square_size * 1))
+    if pos[2] == pos[3]: text_rect = text.get_rect(center=(pos[0] + square_size, pos[1] + square_size)) # 정사각형일때
+    else: text_rect = text.get_rect(center=(pos[0] + square_size * 2, pos[1] + square_size * 1)) # 일반적일때
     window.blit(text, text_rect)
 
 def show_game_rules(): # 게임 규칙 표시
@@ -188,9 +189,9 @@ def show_game_rules(): # 게임 규칙 표시
     game_rule = open(gr_Location, "r", encoding="utf-8") # 게임 규칙 파일 열기
     app = QApplication(sys.argv) # 어플리케이션 생성
 
-    window = QWidget() # 창 생성
-    window.setWindowTitle("게임 규칙") # 창 제목 설정
-    window.setFixedSize(900, 500) # 창 크기 설정 
+    win = QWidget() # 창 생성
+    win.setWindowTitle("게임 규칙") # 창 제목 설정
+    win.setFixedSize(900, 500) # 창 크기 설정 
 
     layout = QVBoxLayout() # 레이아웃 생성
     text = QTextEdit() # 텍스트 생성
@@ -200,18 +201,89 @@ def show_game_rules(): # 게임 규칙 표시
     text.setFont(font) # 폰트 설정
     layout.addWidget(text) # 레이아웃에 텍스트 추가
     button = QPushButton("닫기") # 버튼 생성
-    button.clicked.connect(window.close) # 버튼 클릭 시 창 닫기 
+    button.clicked.connect(win.close) # 버튼 클릭 시 창 닫기 
     layout.addWidget(button) # 레이아웃에 버튼 추가
 
-    window.setLayout(layout) # 창에 레이아웃 설정
-    window.show() # 창 표시
+    win.setLayout(layout) # 창에 레이아웃 설정
+    win.show() # 창 표시
     app.exec_() # 어플리케이션 실행
 
 def handle_dice_click(x, y, btn_pos): # 클릭한 위치 처리
     if btn_pos[0] <= x <= btn_pos[0] + btn_pos[2] and btn_pos[1] <= y <= btn_pos[1] + btn_pos[3]: # 버튼을 클릭한 경우
         roll_dice_sound.play() # 주사위 굴리는 소리 재생
         return True
-    
+
+class ClueNotebook(QWidget):
+    def __init__(self, player_name):
+        super().__init__()
+        self.player_name = player_name
+        self.categories = {
+            '누가?': list(suspects.keys()),
+            '무엇으로?': weapons,
+            '어디에서?': list(locs.keys())
+        }
+        self.notes = {category: [QCheckBox(item) for item in items] for category, items in self.categories.items()}
+        self.init_ui()
+        
+    def init_ui(self):
+        self.setWindowTitle(f"{self.player_name}'s Clue Notebook")
+        layout = QVBoxLayout()
+
+        for category, items in self.notes.items():
+            layout.addWidget(QLabel(category))
+            grid = QGridLayout()
+            for row, checkbox in enumerate(items):
+                grid.addWidget(checkbox, row // 3, row % 3)
+            layout.addLayout(grid)
+
+        save_button = QPushButton('Save')
+        save_button.clicked.connect(self.save_notes)
+        load_button = QPushButton('Load')
+        load_button.clicked.connect(self.load_notes)
+        layout.addWidget(save_button)
+        layout.addWidget(load_button)
+
+        self.setLayout(layout)
+
+    def save_notes(self):
+        try:
+            os.makedirs('save', exist_ok=True)
+            with open(f"save/{self.player_name}_clue_notebook.txt", "w") as file:
+                for category, items in self.notes.items():
+                    file.write(f"{category}\n")
+                    for checkbox in items:
+                        file.write(f"{checkbox.text()}: {checkbox.isChecked()}\n")
+            QMessageBox.information(self, "Saved", "Notebook saved successfully.")
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"An error occurred while saving: {e}")
+
+    def load_notes(self):
+        try:
+            if not os.path.exists('save'):
+                raise FileNotFoundError("No save directory found.")
+            with open(f"save/{self.player_name}_clue_notebook.txt", "r") as file:
+                current_category = None
+                for line in file:
+                    line = line.strip()
+                    if line in self.categories:
+                        current_category = line
+                    elif current_category:
+                        item, value = line.split(": ")
+                        index = self.categories[current_category].index(item)
+                        self.notes[current_category][index].setChecked(value == 'True')
+            QMessageBox.information(self, "Loaded", "Notebook loaded successfully.")
+        except FileNotFoundError:
+            QMessageBox.warning(self, "Warning", "No saved notebook found.")
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"An error occurred while loading: {e}")
+
+def show_clue_notes(player_name):
+    app = QApplication(sys.argv)
+    notebook = ClueNotebook(player_name)
+    notebook.show()
+    app.exec_()
+
+
 def outStartRoom(new_pos, room, isOutStartRoom, cur_player): # 시작점 방을 나가는 경우
     room_x_start, room_y_start, width, height = room  # 방의 위치 및 크기 설정
     room_x_end = room_x_start + width # 방의 끝 위치 설정
@@ -347,6 +419,14 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
     if isOutStartRoom[cur_player] is False and cur_room_loc[cur_player] == "시작점": # 시작점 방에 나간적이 없고 현재 방이 시작점인 경우
         while True:
             event = pg.event.wait() # 이벤트 대기
+            if event.type == pg.MOUSEBUTTONDOWN:
+                x, y = event.pos
+                if (gmrule_btn_pos[0] <= x <= gmrule_btn_pos[0] + gmrule_btn_pos[2] 
+                and gmrule_btn_pos[1] <= y <= gmrule_btn_pos[1] + gmrule_btn_pos[3]): # 게임 규칙 버튼을 누른 경우
+                    show_game_rules() # 게임 규칙 표시
+                if (gmrule_btn_pos[0] + 3 * square_size <= x <= gmrule_btn_pos[0] + gmrule_btn_pos[2] + 3 * square_size
+                        and gmrule_btn_pos[1] <= y <= gmrule_btn_pos[1] + gmrule_btn_pos[3]): # 옆에 있는 노트 버튼을 누른 경우
+                        show_clue_notes(cur_player)
             if event.type == pg.KEYDOWN: # 키를 누른 경우
                 if event.key == pg.K_UP: # 위쪽 방향키를 누른 경우
                     pos = (int(start_room_door_pos[1][0] * square_size + wall_pos[0] + square_size / 2), 
@@ -416,6 +496,14 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
     print("주사위 결과 :", dice1, "+", dice2, "=", dice1 + dice2)
     while dice_roll > 0: # 주사위를 모두 사용할 때까지
         event = pg.event.wait()
+        if event.type == pg.MOUSEBUTTONDOWN:
+            x,y = event.pos
+            if (gmrule_btn_pos[0] <= x <= gmrule_btn_pos[0] + gmrule_btn_pos[2] 
+                and gmrule_btn_pos[1] <= y <= gmrule_btn_pos[1] + gmrule_btn_pos[3]): # 게임 규칙 버튼을 누른 경우
+                    show_game_rules() # 게임 규칙 표시
+            if (gmrule_btn_pos[0] + 3 * square_size <= x <= gmrule_btn_pos[0] + gmrule_btn_pos[2] + 3 * square_size
+                    and gmrule_btn_pos[1] <= y <= gmrule_btn_pos[1] + gmrule_btn_pos[3]): # 옆에 있는 노트 버튼을 누른 경우
+                    show_clue_notes(cur_player)
         if event.type == pg.KEYDOWN: # 키를 누른 경우
             if event.key == pg.K_UP: # 위쪽 방향키를 누른 경우
                 new_pos = player_pos[0], player_pos[1] - 1
@@ -513,7 +601,9 @@ def draw_all(font, grid, room_walls, thickness, player_pos, dice1, dice2, btn_po
     create_and_draw_players(player_pos, False) # 플레이어 생성 및 그리기
     draw_dice(dice1, dice2) # 주사위 그리기
     draw_btn(btn_pos, "주사위 굴리기", font, thickness) # 주사위 굴리기 버튼 그리기
-    draw_btn((btn_pos[0] + 6 * square_size, btn_pos[1], btn_pos[2], btn_pos[3]), "게임 규칙", font, thickness) # 게임 규칙 버튼 그리기
+    draw_btn(gmrule_btn_pos, "규칙", font, thickness) # 게임 규칙 버튼 그리기
+    draw_btn((gmrule_btn_pos[0] + 3* square_size, gmrule_btn_pos[1],
+              gmrule_btn_pos[2], gmrule_btn_pos[3]), f"노트", font, thickness) # 노트 그리기
     pg.display.flip() # 창 업데이트
 
 def reasoning(cur_player, cur_room_loc, player_cards): # 추리
@@ -550,14 +640,9 @@ def reasoning(cur_player, cur_room_loc, player_cards): # 추리
                     msg.showinfo("카드", f"{player}{bachim1} {card}{bachim2} 가지고 있습니다.") # 다른 플레이어가 가지고 있는 카드 출력
         if nonHas: msg.showinfo("카드", "다른 플레이어 카드를 전부 확인했지만 . . .\n아무도 가지고 있지 않습니다.") # 아무도 가지고 있지 않은 경우
         root.destroy()
-    app_width, app_height = 300, 100
     root = tk.Tk()
     root.title("추리")
-    windows_width = root.winfo_screenwidth()
-    windows_height = root.winfo_screenheight()
-    center_width = (windows_width / 2) - (app_width / 2)
-    center_height = (windows_height / 2) - (app_height / 2)
-    root.geometry(f"{app_width}x{app_height}+{int(center_width)}+{int(center_height)}")
+    root.geometry("350x130")
     
     main_theme.set_volume(0.06) # 메인 테마 볼륨 설정
     eval(f"ambient_{locs[cur_room_loc[cur_player]]}").play(-1) # 현재 방의 배경음악 재생
@@ -603,14 +688,9 @@ def final_reasoning(cur_player, case_envelope): # 최종 추리
         print(f"추리: 용의자 - {selected_suspect}, 무기 - {selected_weapon}, 장소 - {selected_room}")
         msg.showinfo("추리", f"{selected_suspect}{bachim1} {selected_weapon}{bachim2} 사용해,\n{selected_room}에서 범행을 저질렀다고 확신합니다.")
         root.destroy()
-    app_width, app_height = 300, 150
     root = tk.Tk()
     root.title("최종 추리")
-    windows_width = root.winfo_screenwidth()
-    windows_height = root.winfo_screenheight()
-    center_width = (windows_width / 2) - (app_width / 2)
-    center_height = (windows_height / 2) - (app_height / 2)
-    root.geometry(f"{app_width}x{app_height}+{int(center_width)}+{int(center_height)}")
+    root.geometry("350x180")
 
     tk.Label(root, text="용의자 선택").grid(row=0, column=0, padx=10, pady=5) # 용의자 선택 레이블
     tk.Label(root, text="살인 도구 선택").grid(row=1, column=0, padx=10, pady=5) # 살인 도구 선택 레이블

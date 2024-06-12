@@ -1,5 +1,6 @@
 import pygame as pg # 파이게임 라이브러리 불러오기
 import os # 운영체제 라이브러리 불러오기
+import time
 
 pg.init() # pygame 초기화
 from package.setting import * # setting.py 파일에서 모든 변수 및 함수 불러오기
@@ -8,6 +9,9 @@ os.system('cls') # 콘솔 화면 지우기
 
 def main(): # 메인 함수
     pg.init() # pg 초기화
+    pg.display.set_caption("CLUE - board game") # 창 제목 설정
+    window.fill(bg_color) # 창 배경색으로 채우기
+    
     dice1 = 0  # 주사위 초기값 설정
     dice2 = 0  # 주사위 초기값 설정
     cnt = 0  # 카운트 초기값 설정
@@ -15,7 +19,7 @@ def main(): # 메인 함수
     font = pg.font.SysFont('malgungothic', square_size * 2 // 3) # 폰트 설정
     case_envelope, player_cards, last_cards = shuffle_and_distribute_cards() # 사건 봉투, 플레이어 카드, 마지막 카드를 섞고 분배합니다.
     add_rooms_to_grid(grid) # 방을 그리드에 추가
-    dice_btn_pos = wall_pos[0] + 27 * square_size, wall_pos[1] + 17 * square_size, 4 * square_size, 2 * square_size # 버튼 위치 설정
+    dice_btn_pos = wall_pos[0] + 26 * square_size, wall_pos[1] + 17 * square_size, 4 * square_size, 2 * square_size # 버튼 위치 설정
 
     player_pos = { # 각 플레이어의 초기 위치를 설정합니다.
         list(suspects.keys())[0] : (8, 10), list(suspects.keys())[1] : (11, 10),
@@ -107,5 +111,56 @@ def main(): # 메인 함수
                                  dice_btn_pos, cur_player, case_envelope, player_cards) # 모든 요소 그리기
     pg.quit() # pg 종료 
 
-if __name__ == "__main__": # 메인 함수 실행
+# 인트로 화면
+def intro_screen(): 
+    screen = pg.display.set_mode(window_size)
+    pg.display.set_caption("인트로")
+
+    font = pg.font.SysFont("malgungothic", 23)
+    screen.fill(WHITE) 
+    screen.blit(cluedo_logo, ((window_size[0] - cluedo_logo.get_width()) // 2, (window_size[1] - cluedo_logo.get_height()) // 2))  # 이미지를 화면 중앙에 배치
+
+    text = font.render("게임을 시작하려면 아무 키를 입력하세요...", True, BLACK)
+    text_rect = text.get_rect(center=(window_size[0] // 2, window_size[1] - 50))
+    screen.blit(text, text_rect)
+
+    pg.display.flip()
+
+    wait = True # 아무 키나 누를 때까지 대기
+    while wait:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+                sys.exit()
+            elif event.type == pg.KEYDOWN or event.type == pg.MOUSEBUTTONDOWN:
+                wait = False
+
+# fade-out 효과
+def fade_out():
+    alpha = 0  # 최초 알파값
+    screen = pg.display.set_mode(window_size)
+
+    running = True
+    while running:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+                sys.exit()
+        screen.fill(BLACK)  
+
+        fade_surface = pg.Surface(window_size)
+        fade_surface.fill(BLACK)
+        fade_surface.set_alpha(alpha)
+        screen.blit(fade_surface, (0, 0))
+        pg.display.flip()
+
+        alpha += 2
+        if alpha > 255: alpha = 255   
+        if alpha >= 255: return  
+        clock.tick(FPS)
+
+if __name__ == "__main__":
+    intro_screen()
+    fade_out()
+    show_game_rules()
     main() # 메인 함수 실행

@@ -14,16 +14,16 @@ DARK_GRAY = (100, 100, 100, 255) # 짙은 회색
 
 # 게임 설정
 PLAYER = 4 # 플레이어 수 설정
-square_size = 30  # 기본 사각형 크기 설정
+FPS = 300   # FPS 오를수록 빨라짐
+clock = pg.time.Clock()
+square_size = 32  # 기본 사각형 크기 설정
 window_size = (square_size * 40, square_size * 24) # 창 크기 설정
+window = pg.display.set_mode(window_size, pg.RESIZABLE)
 bg_color = WHITE # 배경색 설정
 wall_color = BLACK # 벽의 색상 설정
 wall_pos = pg.Rect(window_size[0] / 2 - square_size * 19, window_size [1] / 2 - square_size * 10, 20 * square_size, 20 * square_size) # 벽의 위치 설정
 grid_color = GRAY  # 그리드 색상
 thickness = square_size // 10 # 선 두께 설정
-window = pg.display.set_mode(window_size) # 창 크기 설정
-pg.display.set_caption("CLUE - board game") # 창 제목 설정
-window.fill(bg_color) # 창 배경색으로 채우기
 
 # 이미지 및 소리 불러오기
 cluedo_logo = pg.image.load("images/cluedo_logo.png") # 클루 로고 이미지 불러오기
@@ -197,7 +197,7 @@ card_font = pg.font.SysFont('malgungothic', square_size) # 카드 폰트
 border_color = wall_color # 테두리 색상
 border_thickness = thickness # 테두리 두께
 player_size = square_size / 3 # 플레이어 크기
-gmrule_btn_pos = wall_pos[0] + 33 * square_size, wall_pos[1] + 17 * square_size, 4 * square_size, 2 * square_size # 게임 규칙 버튼 위치 설정
+gmrule_btn_pos = wall_pos[0] + 31 * square_size, wall_pos[1] + 17 * square_size, 2 * square_size, 2 * square_size # 게임 규칙 버튼 위치 설정
 hasReasoned = { # 추리 여부
     list(suspects.keys())[0]: False, # 피콕
     list(suspects.keys())[1]: False, # 플럼
