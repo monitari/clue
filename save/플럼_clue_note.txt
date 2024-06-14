@@ -11,14 +11,14 @@
 단검: False
 렌치: False
 권총: False
-촛대: True
+촛대: False
 어디에서?
 침실: False
 욕실: False
-서제: True
+서제: False
 부엌: False
 식당: False
 거실: False
 마당: False
 차고: False
-게임룸: True
+게임룸: False

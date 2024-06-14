@@ -36,31 +36,31 @@ put_player_sound = pg.mixer.Sound("sounds/put_player.mp3") # 플레이어를 놓
 enter_room_sound = pg.mixer.Sound("sounds/enter_room.mp3") # 방에 들어가는 소리 불러오기
 exit_room_sound = pg.mixer.Sound("sounds/exit_room.mp3") # 방을 나가는 소리 불러오기
 ambient_arcade= pg.mixer.Sound("sounds/ambient_arcade_room.mp3") # 게임룸 배경음 불러오기
-ambient_arcade.set_volume(0.02) # 게임룸 배경음 볼륨 설정
+ambient_arcade.set_volume(0.03) # 게임룸 배경음 볼륨 설정
 ambient_bathroom = pg.mixer.Sound("sounds/ambient_bathroom.mp3") # 욕실 배경음 불러오기
-ambient_bathroom.set_volume(0.11) # 욕실 배경음 볼륨 설정
+ambient_bathroom.set_volume(0.14) # 욕실 배경음 볼륨 설정
 ambient_bedroom = pg.mixer.Sound("sounds/ambient_bedroom.mp3") # 침실 배경음 불러오기
-ambient_bedroom.set_volume(0.71) # 침실 배경음 볼륨 설정
+ambient_bedroom.set_volume(0.81) # 침실 배경음 볼륨 설정
 ambient_cafeteria = pg.mixer.Sound("sounds/ambient_cafeteria.mp3") # 식당 배경음 불러오기
-ambient_cafeteria.set_volume(0.18) # 식당 배경음 볼륨 설정
+ambient_cafeteria.set_volume(0.23) # 식당 배경음 볼륨 설정
 ambient_garage = pg.mixer.Sound("sounds/ambient_garage.mp3") # 차고 배경음 불러오기
-ambient_garage.set_volume(0.1) # 차고 배경음 볼륨 설정
+ambient_garage.set_volume(0.16) # 차고 배경음 볼륨 설정
 ambient_kitchen = pg.mixer.Sound("sounds/ambient_kitchen_room.mp3") # 부엌 배경음 불러오기
-ambient_kitchen.set_volume(0.6) # 부엌 배경음 볼륨 설정
+ambient_kitchen.set_volume(0.7) # 부엌 배경음 볼륨 설정
 ambient_library = pg.mixer.Sound("sounds/ambient_library_room.mp3") # 서재 배경음 불러오기
-ambient_library.set_volume(0.09) # 서재 배경음 볼륨 설정
+ambient_library.set_volume(0.13) # 서재 배경음 볼륨 설정
 ambient_livingroom = pg.mixer.Sound("sounds/ambient_living_room.mp3") # 거실 배경음 불러오기
-ambient_livingroom.set_volume(0.5) # 거실 배경음 볼륨 설정
+ambient_livingroom.set_volume(1.6) # 거실 배경음 볼륨 설정
 ambient_yard = pg.mixer.Sound("sounds/ambient_yard.mp3") # 마당 배경음 불러오기
-ambient_yard.set_volume(0.3) # 마당 배경음 볼륨 설정
+ambient_yard.set_volume(0.5) # 마당 배경음 볼륨 설정
 walking_sound = pg.mixer.Sound("sounds/walking.mp3") # 걷는 소리 불러오기
 reasoning_sound = pg.mixer.Sound("sounds/reasoning.mp3") # 추리하는 소리 불러오기
 final_reasoning_sound = pg.mixer.Sound("sounds/final_reasoning.mp3") # 최종 추리하는 소리 불러오기
-final_reasoning_sound.set_volume(0.5) # 최종 추리하는 소리 볼륨 설정
+final_reasoning_sound.set_volume(0.6) # 최종 추리하는 소리 볼륨 설정
 win_sound = pg.mixer.Sound("sounds/win.mp3") # 승리하는 소리 불러오기
-win_sound.set_volume(0.6) # 승리하는 소리 볼륨 설정
+win_sound.set_volume(0.75) # 승리하는 소리 볼륨 설정
 lose_sound = pg.mixer.Sound("sounds/lose.mp3") # 패배하는 소리 불러오기
-lose_sound.set_volume(0.6) # 패배하는 소리 볼륨 설정
+lose_sound.set_volume(0.75) # 패배하는 소리 볼륨 설정
 
 # 카드 설정
 suspects = { # 용의자카드
@@ -210,3 +210,4 @@ isLosed = { # 패배 여부
     list(suspects.keys())[2]: False, # 스칼렛
     list(suspects.keys())[3]: False, # 머스타드
 }
+isLeavingRoom = "", False # 방을 나가는 여부 (현재 방 위치, 나가는 여부, 버그 수정용)

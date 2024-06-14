@@ -42,7 +42,7 @@ def main(): # 메인 함수
                      
     while running: # 게임이 실행 중인 동안
         global isLosed # 패배 여부
-        main_theme.set_volume(0.18) # 메인 테마 볼륨 설정
+        main_theme.set_volume(0.25) # 메인 테마 볼륨 설정
         if main_theme.get_num_channels() == 0: main_theme.play(-1) # 메인 테마 소리 재생 (재생 중이 아닌 경우)
         for event in pg.event.get(): # 이벤트 리스트 반복
             cur_player = list(player_pos.keys())[cnt % PLAYER] # 현재 플레이어
@@ -87,8 +87,12 @@ def main(): # 메인 함수
                 if event.type == pg.QUIT: running = False # 종료 버튼을 누른 경우
                 if event.type == pg.MOUSEBUTTONDOWN: 
                     x, y = event.pos  # 클릭한 위치를 가져옵니다.
+                    if (gmrule_btn_pos[0] + 3 * square_size <= x <= gmrule_btn_pos[0] + gmrule_btn_pos[2] + 3 * square_size
+                        and gmrule_btn_pos[1] <= y <= gmrule_btn_pos[1] + gmrule_btn_pos[3]): # 옆에 있는 노트 버튼을 누른 경우
+                        cur_player = list(player_pos.keys())[cnt - 1 % PLAYER] # 현재 플레이어 (주사위 전)
+                        show_clue_notes(cur_player) # 노트 표시
+                        cur_player = list(player_pos.keys())[cnt % PLAYER] # 현재 플레이어 (다시 복구)
                     if handle_dice_click(x, y, dice_btn_pos) : # 주사위 굴리기 버튼을 누른 경우
-                        main_theme.set_volume(0.12) # 메인 테마 볼륨 설정
                         player_pos, dice1, dice2, previous_dice1, previous_dice2 = do_dice_roll(previous_dice1, previous_dice2, 
                                                                                                 dice1, dice2, player_pos) # 주사위 굴리기
                         draw_all(font, grid, room_walls, thickness, player_pos, dice1, dice2, 
@@ -100,7 +104,13 @@ def main(): # 메인 함수
                         if new_pos == player_pos[cur_player] and reason is None: # 이동하지 않은 경우
                             previous_dice1 = dice1 # 이전 주사위 결과를 저장합니다.
                             previous_dice2 = dice2 # 이전 주사위 결과를 저장합니다.
-                            notMoved = True       
+                            notMoved = True
+                            if cur_room_loc[cur_player] != "복도": # 현재 플레이어의 방안에서, 방을 나가려고 시도했는데 막혀서 이동하지 못한 경우
+                                print("방을 나가려고 시도했으나, 막혀서 이동하지 못함") # 콘솔에 출력
+                                previous_dice1 = None # 이전 주사위 결과를 초기화합니다.
+                                previous_dice2 = None # 이전 주사위 결과를 초기화합니다.
+                                cnt += 1 # 카운트 증가
+                                notMoved = False
                         else: # 이동한 경우
                             previous_dice1 = None # 이전 주사위 결과를 초기화합니다.
                             previous_dice2 = None # 이전 주사위 결과를 초기화합니다.     
@@ -135,10 +145,9 @@ def intro_screen():
             elif event.type == pg.KEYDOWN or event.type == pg.MOUSEBUTTONDOWN:
                 wait = False
 
-# fade-out 효과
-def fade_out():
+def fade_out(): # 페이드 아웃 함수
     alpha = 0  # 최초 알파값
-    screen = pg.display.set_mode(window_size)
+    screen = pg.display.set_mode(window_size) # 화면 설정
 
     running = True
     while running:
@@ -155,12 +164,12 @@ def fade_out():
         pg.display.flip()
 
         alpha += 2
-        if alpha > 255: alpha = 255   
-        if alpha >= 255: return  
-        clock.tick(FPS)
+        if alpha > 255: alpha = 255 # 알파값이 255보다 크면 255로 설정
+        if alpha >= 255: return # 알파값이 255보다 크거나 같으면 반환
+        clock.tick(FPS) # FPS 설정
 
 if __name__ == "__main__":
-    intro_screen()
-    fade_out()
-    show_game_rules()
+    intro_screen() # 인트로 화면
+    fade_out() # 페이드 아웃
+    show_game_rules() # 게임 규칙 표시
     main() # 메인 함수 실행

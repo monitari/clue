@@ -184,6 +184,7 @@ def draw_btn(pos, text, font, thickness): # 버튼 그리기
     window.blit(text, text_rect)
 
 def show_game_rules(): # 게임 규칙 표시
+    main_theme.set_volume(0.2) # 메인 테마 소리 설정
     show_game_rule_sound.play() # 게임 규칙 소리 재생
     gr_Location = os.getcwd() + "\\txt\\game_rule.txt" # 게임 규칙 파일 경로
     game_rule = open(gr_Location, "r", encoding="utf-8") # 게임 규칙 파일 열기
@@ -213,76 +214,76 @@ def handle_dice_click(x, y, btn_pos): # 클릭한 위치 처리
         roll_dice_sound.play() # 주사위 굴리는 소리 재생
         return True
 
-class ClueNotebook(QWidget):
-    def __init__(self, player_name):
-        super().__init__()
-        self.player_name = player_name
-        self.categories = {
+class ClueNotebook(QWidget): # 추리 노트북 클래스
+    def __init__(self, player_name): # 생성자
+        super().__init__()  # 부모 클래스 생성자 호출
+        self.player_name = player_name # 플레이어 이름 설정
+        self.categories = { # 카테고리 설정
             '누가?': list(suspects.keys()),
             '무엇으로?': weapons,
             '어디에서?': list(locs.keys())
         }
-        self.notes = {category: [QCheckBox(item) for item in items] for category, items in self.categories.items()}
-        self.init_ui()
+        self.notes = {category: [QCheckBox(item) for item in 
+                                 items] for category, items in self.categories.items()} # 노트 설정
+        self.init_ui() # UI 초기화
         
-    def init_ui(self):
-        self.setWindowTitle(f"{self.player_name}'s Clue Notebook")
-        layout = QVBoxLayout()
+    def init_ui(self): # UI 초기화
+        self.setWindowTitle(f"{self.player_name}의 노트") # 플레이어 이름 설정
+        layout = QVBoxLayout() # 레이아웃 생성
+        main_theme.set_volume(0.2) # 메인 테마 소리 설정
 
-        for category, items in self.notes.items():
-            layout.addWidget(QLabel(category))
-            grid = QGridLayout()
-            for row, checkbox in enumerate(items):
-                grid.addWidget(checkbox, row // 3, row % 3)
-            layout.addLayout(grid)
+        for category, items in self.notes.items(): # 각 카테고리에 대해
+            layout.addWidget(QLabel(category)) # 레이블 추가
+            grid = QGridLayout() # 그리드 생성
+            for row, checkbox in enumerate(items): # 각 카테고리에 대해
+                grid.addWidget(checkbox, row // 3, row % 3) # 그리드에 체크박스 추가
+            layout.addLayout(grid) # 레이아웃에 그리드 추가
 
-        save_button = QPushButton('Save')
-        save_button.clicked.connect(self.save_notes)
-        load_button = QPushButton('Load')
-        load_button.clicked.connect(self.load_notes)
-        layout.addWidget(save_button)
-        layout.addWidget(load_button)
+        save_button = QPushButton('저장') # 버튼 생성
+        save_button.clicked.connect(self.save_notes) # 버튼 클릭 시 노트 저장
+        load_button = QPushButton('불러오기') # 버튼 생성
+        load_button.clicked.connect(self.load_notes) # 버튼 클릭 시 노트 불러오기
+        layout.addWidget(save_button) # 레이아웃에 버튼 추가
+        layout.addWidget(load_button) # 레이아웃에 버튼 추가
+        self.setLayout(layout) # 레이아웃 설정
 
-        self.setLayout(layout)
-
-    def save_notes(self):
+    def save_notes(self): # 노트 저장
         try:
-            os.makedirs('save', exist_ok=True)
-            with open(f"save/{self.player_name}_clue_notebook.txt", "w") as file:
-                for category, items in self.notes.items():
-                    file.write(f"{category}\n")
-                    for checkbox in items:
-                        file.write(f"{checkbox.text()}: {checkbox.isChecked()}\n")
-            QMessageBox.information(self, "Saved", "Notebook saved successfully.")
-        except Exception as e:
-            QMessageBox.warning(self, "Error", f"An error occurred while saving: {e}")
+            os.makedirs('save', exist_ok=True) # 저장 폴더 생성
+            with open(f"save/{self.player_name}_clue_note.txt", "w") as file: # 파일 열기
+                for category, items in self.notes.items(): # 각 카테고리에 대해
+                    file.write(f"{category}\n") # 카테고리 저장
+                    for checkbox in items: # 각 체크박스에 대해
+                        file.write(f"{checkbox.text()}: {checkbox.isChecked()}\n") # 아이템 및 값 저장
+            QMessageBox.information(self, "저장 완료", "추리 노트를 저장했습니다.")
+        except Exception as e: # 예외 처리
+            QMessageBox.warning(self, "저장 실패", f"추리 노트를 저장하는 도중 오류가 발생했습니다: {e}")
 
-    def load_notes(self):
+    def load_notes(self): # 노트 불러오기
         try:
-            if not os.path.exists('save'):
-                raise FileNotFoundError("No save directory found.")
-            with open(f"save/{self.player_name}_clue_notebook.txt", "r") as file:
-                current_category = None
-                for line in file:
-                    line = line.strip()
-                    if line in self.categories:
-                        current_category = line
-                    elif current_category:
-                        item, value = line.split(": ")
-                        index = self.categories[current_category].index(item)
-                        self.notes[current_category][index].setChecked(value == 'True')
-            QMessageBox.information(self, "Loaded", "Notebook loaded successfully.")
-        except FileNotFoundError:
-            QMessageBox.warning(self, "Warning", "No saved notebook found.")
-        except Exception as e:
-            QMessageBox.warning(self, "Error", f"An error occurred while loading: {e}")
+            if not os.path.exists('save'): # 저장 폴더가 없는 경우
+                raise FileNotFoundError("저장된 노트가 없습니다.")
+            with open(f"save/{self.player_name}_clue_note.txt", "r") as file: # 파일 열기
+                current_category = None # 현재 카테고리
+                for line in file: # 파일의 각 줄에 대해
+                    line = line.strip() # 공백 제거
+                    if line in self.categories: # 카테고리인 경우
+                        current_category = line # 현재 카테고리 설정
+                    elif current_category: # 카테고리가 있는 경우
+                        item, value = line.split(": ") # 아이템 및 값 설정
+                        index = self.categories[current_category].index(item) # 인덱스 설정
+                        self.notes[current_category][index].setChecked(value == 'True') # 체크박스 설정
+            QMessageBox.information(self, "불러오기 완료", "추리 노트를 불러왔습니다.")
+        except FileNotFoundError: # 파일이 없는 경우
+            QMessageBox.warning(self, "저장된 노트 없음", "저장된 노트가 없습니다.")
+        except Exception as e: # 예외 처리
+            QMessageBox.warning(self, "불러오기 실패", f"추리 노트를 불러오는 도중 오류가 발생했습니다: {e}")
 
-def show_clue_notes(player_name):
-    app = QApplication(sys.argv)
-    notebook = ClueNotebook(player_name)
-    notebook.show()
-    app.exec_()
-
+def show_clue_notes(player_name): # 추리 노트 표시
+    app = QApplication(sys.argv) # 어플리케이션 생성
+    notebook = ClueNotebook(player_name) # 추리 노트 생성
+    notebook.show() # 추리 노트 표시
+    app.exec_() # 어플리케이션 실행
 
 def outStartRoom(new_pos, room, isOutStartRoom, cur_player): # 시작점 방을 나가는 경우
     room_x_start, room_y_start, width, height = room  # 방의 위치 및 크기 설정
@@ -330,7 +331,9 @@ def do_dice_roll(previous_dice1, previous_dice2, dice1, dice2, player_pos): # �
 
 def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutStartRoom, cur_room_loc, case_envelope, player_cards) : # 플레이어 이동
     def exit_room(cur_player, new_pos, dice_roll): # 방을 나가는 경우
+        global isLeavingRoom # 방을 나가는 여부 (버그 수정을 위한 변수)
         print("방을 나감")
+        isLeavingRoom = cur_room_loc[cur_player], True # 방을 나가는 여부 설정
         cur_room_loc[cur_player] = "복도" # 현재 방 위치를 복도로 설정
         player_pos = new_pos # 플레이어 위치를 새로운 위치로 설정
         dice_roll -= 1 # 주사위 결과를 1 감소시킵니다.
@@ -382,16 +385,13 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
                     if show_message("예/아니오", "이 방에서 나가시겠습니까?"):
                         new_pos = room_door_pos[cur_room_loc[cur_player]] # 방의 문 위치로 이동
                         if new_pos in other_players_poss.values(): # 다른 플레이어가 있는 경우
-                            if cur_room_loc[cur_player] == "마당": # 마당인 경우 (마당은 입구가 2칸 넓이)
-                                if (10, 16) in other_players_poss.values() or (9, 16) in other_players_poss.values(): # 다른 플레이어가 있는 경우
-                                    print("다른 플레이어가 막고 있음. 이동할 수 없는 위치", new_pos, other_players_poss)
-                                    show_message("실패", "다른 플레이어가 가로막고 있습니다.\n이동할 수 없는 위치입니다.")
-                                    dice_roll = 0 # 주사위 결과 초기화
-                                else: player_pos, dice_roll = exit_room(cur_player, new_pos, dice_roll) # 방을 나가는 경우
-                            else: # 마당이 아닌 경우
-                                print("다른 플레이어가 막고 있음. 이동할 수 없는 위치", new_pos, other_players_poss)
-                                show_message("실패", "다른 플레이어가 가로막고 있습니다.\n이동할 수 없는 위치입니다.")
-                                dice_roll = 0  # 주사위 결과 초기화
+                            print("다른 플레이어가 막고 있음. 이동할 수 없는 위치", new_pos, other_players_poss)
+                            show_message("실패", "다른 플레이어가 가로막고 있습니다.\n이동할 수 없는 위치입니다.")
+                            dice_roll = 0  # 주사위 결과 초기화
+                            if hasReasoned[cur_player] is True: # 한 방에서 연속으로 추리를 한 경우
+                                print("한 방에서 연속으로 추리를 할 수 없음")
+                                show_message("경고", "한 방에서 연속으로 추리를 할 수 없습니다.")
+                                return player_pos, False # 플레이어 위치 및 이동 여부 반환
                         else: player_pos, dice_roll = exit_room(cur_player, new_pos, dice_roll) # 방을 나가는 경우
                     else : # 취소, 방을 나가지 않는 경우
                         print("방을 나가지 않음")
@@ -404,9 +404,25 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
                 if show_message("예/아니오", "이 방에서 나가시겠습니까?"): # 방을 나가는 경우
                     new_pos = room_door_pos[cur_room_loc[cur_player]] # 방의 문 위치로 이동
                     if new_pos in other_players_poss.values(): # 다른 플레이어가 있는 경우
-                        print("다른 플레이어가 막고 있음. 이동할 수 없는 위치", new_pos, other_players_poss)
-                        show_message("실패", "다른 플레이어가 가로막고 있습니다.\n이동할 수 없는 위치입니다.")
-                        dice_roll = 0 # 주사위 결과 초기화
+                        if cur_room_loc[cur_player] == "마당": # 마당인 경우 (마당은 입구가 2칸 넓이)
+                            new_new_pos = (10, 16) # 다른 위치
+                            if new_new_pos in other_players_poss.values(): # (10,16) 다른 플레이어가 있는 경우
+                                print("다른 플레이어가 막고 있음. 이동할 수 없는 위치", new_new_pos, other_players_poss)
+                                show_message("실패", "다른 플레이어가 가로막고 있습니다.\n이동할 수 없는 위치입니다.")
+                                dice_roll = 0 # 주사위 결과 초기화
+                                if hasReasoned[cur_player] is True: # 한 방에서 연속으로 추리를 한 경우
+                                    print("한 방에서 연속으로 추리를 할 수 없음")
+                                    show_message("경고", "한 방에서 연속으로 추리를 할 수 없습니다.")
+                                    return player_pos, False # 플레이어 위치 및 이동 여부 반환
+                            else: player_pos, dice_roll = exit_room(cur_player, new_new_pos, dice_roll) # 방을 나가는 경우
+                        else: # 마당 아닌 경우
+                            print("다른 플레이어가 막고 있음. 이동할 수 없는 위치", new_pos, other_players_poss)
+                            show_message("실패", "다른 플레이어가 가로막고 있습니다.\n이동할 수 없는 위치입니다.")
+                            dice_roll = 0 # 주사위 결과 초기화
+                            if hasReasoned[cur_player] is True: # 한 방에서 연속으로 추리를 한 경우
+                                print("한 방에서 연속으로 추리를 할 수 없음")
+                                show_message("경고", "한 방에서 연속으로 추리를 할 수 없습니다.")
+                                return player_pos, False # 플레이어 위치 및 이동 여부 반환
                     else: player_pos, dice_roll = exit_room(cur_player, new_pos, dice_roll) # 방을 나가는 경우
                 else: # 취소, 방을 나가지 않는 경우
                     print("방을 나가지 않음")
@@ -538,7 +554,11 @@ def move_player(cur_player, player_pos, dice1, dice2, other_players_poss, isOutS
             if window.get_at(mid) == BLACK: # 벽이 있는 경우
                 print("이동 불가,", cur_dir, "에 벽이 있음, 위치 :", new_pos)
                 show_message("실패", cur_dir + "에 벽이 있어 이동할 수 없습니다. 다시 선택해주세요.")
-                player_pos = new_poss[-1] # 마지막으로 성공한 위치로 돌아갑니다.
+                global isLeavingRoom # 방을 나가는 여부 (버그 수정을 위한 변수)
+                if isLeavingRoom[1] is True: # 방을 나가는 경우 (방을 나갈때 벽에 부딪히면 버그가 발생하여 방을 나가는 경우에 대한 예외처리 추가)
+                    player_pos = room_door_pos[isLeavingRoom[0]] # 방의 문 위치로 이동
+                    isLeavingRoom = "", False # 방을 나가는 여부 설정
+                else: player_pos = new_poss[-1] # 마지막으로 성공한 위치로 돌아갑니다.
             else: # 벽이 없는 경우
                 enter_room = handle_room_entry(new_pos, cur_player, isOutStartRoom, other_players_poss, cur_room_loc, case_envelope) # 방에 들어가는 경우
                 if new_pos in other_players_poss.values(): # 다른 플레이어가 있는 경우 
@@ -669,7 +689,7 @@ def reasoning(cur_player, cur_room_loc, player_cards): # 추리
 def final_reasoning(cur_player, case_envelope): # 최종 추리
     print("최종 추리 시작!")
     main_theme.set_volume(0) # 메인 테마 볼륨 설정
-    final_reasoning_sound.set_volume(0.2) # 최종 추리 소리 볼륨 설정
+    final_reasoning_sound.set_volume(0.35) # 최종 추리 소리 볼륨 설정
     final_reasoning_sound.play(-1) # 최종 추리 소리 재생
     def really_right(): # 확신 여부
         if show_message("예/아니오", "정말 확실합니까?\n실패하면 게임에서 제외됩니다."): make_guess() # 추리하기

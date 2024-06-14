@@ -3,15 +3,15 @@
 플럼: False
 스칼렛: False
 머스타드: False
-그린: True
+그린: False
 화이트: False
 무엇으로?
 파이프: False
 밧줄: False
-단검: True
+단검: False
 렌치: False
 권총: False
-촛대: True
+촛대: False
 어디에서?
 침실: False
 욕실: False
@@ -21,4 +21,4 @@
 거실: False
 마당: False
 차고: False
-게임룸: True
+게임룸: False
