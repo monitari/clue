@@ -89,7 +89,7 @@ def main(): # 메인 함수
                     x, y = event.pos  # 클릭한 위치를 가져옵니다.
                     if (gmrule_btn_pos[0] + 3 * square_size <= x <= gmrule_btn_pos[0] + gmrule_btn_pos[2] + 3 * square_size
                         and gmrule_btn_pos[1] <= y <= gmrule_btn_pos[1] + gmrule_btn_pos[3]): # 옆에 있는 노트 버튼을 누른 경우
-                        cur_player = list(player_pos.keys())[cnt - 1 % PLAYER] # 현재 플레이어 (주사위 전)
+                        cur_player = list(player_pos.keys())[(cnt - 1) % PLAYER] # 현재 플레이어 (주사위 전)
                         show_clue_notes(cur_player) # 노트 표시
                         cur_player = list(player_pos.keys())[cnt % PLAYER] # 현재 플레이어 (다시 복구)
                     if handle_dice_click(x, y, dice_btn_pos) : # 주사위 굴리기 버튼을 누른 경우
